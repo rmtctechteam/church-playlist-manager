@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Church Playlist Manager</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Church Playlist Manager</h1>
+  </header>
+  <main>
+    <div id="song-list-view">
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Search songs by title, artist, or lyrics..." autocomplete="off">
+      </div>
+      <ul id="song-list"></ul>
+    </div>
+    <div id="song-detail-view" class="hidden">
+      <button id="back-btn">&larr; Back to songs</button>
+      <div id="song-detail"></div>
+    </div>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Node.js backend, simple HTML/JS frontend, file-based storage
+  Domain: Church music team playlist management
+  Songs stored as .txt files in songs/ directory
+  Playlists and usage data stored in data/ directory
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
