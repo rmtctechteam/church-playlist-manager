@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const usageStore = require('../usageStore');
 
 function createSongsRouter(songs) {
   // Strip lyrics from a song for list responses
@@ -40,6 +41,11 @@ function createSongsRouter(songs) {
 
     scored.sort((a, b) => a.rank - b.rank);
     res.json(scored.map(s => toSummary(s.song)));
+  });
+
+  // GET /api/songs/:id/usage — usage history for a song
+  router.get('/:id/usage', (req, res) => {
+    res.json(usageStore.getUsageForSong(req.params.id));
   });
 
   // GET /api/songs/:id — full song details with lyrics

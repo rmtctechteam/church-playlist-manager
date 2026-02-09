@@ -9,17 +9,47 @@
 <body>
   <header>
     <h1>Church Playlist Manager</h1>
+    <nav class="tab-bar">
+      <button class="tab active" data-tab="playlists">Service Playlists</button>
+      <button class="tab" data-tab="songs">Songs</button>
+    </nav>
   </header>
   <main>
-    <div id="song-list-view">
-      <div class="search-bar">
-        <input type="text" id="search-input" placeholder="Search songs by title, artist, or lyrics..." autocomplete="off">
+    <!-- Songs tab -->
+    <div id="songs-tab" class="hidden">
+      <div id="song-list-view">
+        <div class="search-bar">
+          <input type="text" id="search-input" placeholder="Search songs by title, artist, or lyrics..." autocomplete="off">
+        </div>
+        <ul id="song-list"></ul>
       </div>
-      <ul id="song-list"></ul>
+      <div id="song-detail-view" class="hidden">
+        <button id="back-btn">&larr; Back to songs</button>
+        <div id="song-detail"></div>
+      </div>
     </div>
-    <div id="song-detail-view" class="hidden">
-      <button id="back-btn">&larr; Back to songs</button>
-      <div id="song-detail"></div>
+
+    <!-- Playlists tab -->
+    <div id="playlists-tab">
+      <div id="playlist-list-view">
+        <div class="playlist-header">
+          <h2>Service Playlists</h2>
+          <button id="new-playlist-btn" class="btn btn-primary">+ New Playlist</button>
+        </div>
+        <nav class="subtab-bar">
+          <button class="subtab active" data-subtab="upcoming">Upcoming</button>
+          <button class="subtab" data-subtab="past">Past</button>
+        </nav>
+        <div id="playlist-list"></div>
+      </div>
+      <div id="playlist-editor-view" class="hidden">
+        <button class="back-link" id="editor-back-btn">&larr; Back to playlists</button>
+        <div id="playlist-editor"></div>
+      </div>
+      <div id="playlist-display-view" class="hidden">
+        <button class="back-link" id="display-back-btn">&larr; Back to playlists</button>
+        <div id="playlist-display"></div>
+      </div>
     </div>
   </main>
   <script src="app.js"></script>
