@@ -550,7 +550,7 @@ main:has(#playlist-editor-view:not(.hidden)) {
   align-items: center;
 }
 
-.editor-bottom-actions-left {
+.editor-bottom-actions-right {
   display: flex;
   gap: 0.75rem;
 }

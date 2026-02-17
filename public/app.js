@@ -447,11 +447,11 @@ function renderPlaylistEditor() {
       </div>
     </div>
     <div class="editor-bottom-actions">
-      <div class="editor-bottom-actions-left">
-        <button class="btn btn-primary" id="save-playlist-btn">Save</button>
-        <button class="btn btn-secondary" id="display-from-editor-btn">Display</button>
-      </div>
       <button class="btn btn-danger" id="delete-playlist-btn">Delete Playlist</button>
+      <div class="editor-bottom-actions-right">
+        <button class="btn btn-secondary" id="display-from-editor-btn">Display</button>
+        <button class="btn btn-primary" id="save-playlist-btn">Save</button>
+      </div>
     </div>
     <div id="delete-modal" class="modal-overlay hidden">
       <div class="modal">
