@@ -25,10 +25,18 @@ function createPlaylistsRouter(songs) {
       children.push(new Paragraph({ children: [new TextRun({ text: `Date: ${playlist.date}`, italics: true })] }));
     }
     if (playlist.theme) {
-      children.push(new Paragraph({ children: [new TextRun({ text: `Theme: ${playlist.theme}`, italics: true })] }));
+      children.push(new Paragraph({ children: [
+        new TextRun({ text: 'Theme: ', bold: true }),
+        new TextRun({ text: playlist.theme }),
+      ] }));
     }
     if (playlist.bibleLessons) {
-      children.push(new Paragraph({ children: [new TextRun({ text: `Bible Lessons: ${playlist.bibleLessons}`, italics: true })] }));
+      const lessons = playlist.bibleLessons.split(',').map(s => s.trim()).filter(Boolean);
+      const runs = [new TextRun({ text: 'Bible Lessons:', bold: true })];
+      for (const lesson of lessons) {
+        runs.push(new TextRun({ text: lesson, break: 1 }));
+      }
+      children.push(new Paragraph({ children: runs }));
     }
 
     // Spacing after metadata before first section

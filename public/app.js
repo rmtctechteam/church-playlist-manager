@@ -425,11 +425,11 @@ function renderPlaylistEditor() {
           </div>
           <div class="form-group">
             <label for="edit-theme">Theme</label>
-            <input type="text" id="edit-theme" value="${escapeHtml(p.theme || '')}" placeholder="e.g., Grace and Forgiveness">
+            <textarea id="edit-theme" rows="3" placeholder="e.g., Grace and Forgiveness">${escapeHtml(p.theme || '')}</textarea>
           </div>
           <div class="form-group">
             <label for="edit-bible-lessons">Bible Lessons</label>
-            <input type="text" id="edit-bible-lessons" value="${escapeHtml(p.bibleLessons || '')}" placeholder="e.g., Romans 8:28, John 3:16">
+            <textarea id="edit-bible-lessons" rows="5" placeholder="e.g., Romans 8:28&#10;John 3:16">${escapeHtml((p.bibleLessons || '').replace(/, /g, '\n'))}</textarea>
           </div>
           <div class="form-group">
             <label for="edit-google-doc">Song Sheet Google Doc</label>
@@ -442,6 +442,14 @@ function renderPlaylistEditor() {
         </div>
       </div>
       <div class="editor-main">
+        <div class="editor-header-summary">
+          <div class="header-summary-row">
+            <span><strong>Date:</strong> ${p.date || 'Not set'}</span>
+            <span><strong>Type:</strong> ${escapeHtml(getServiceTypeName(p.type))}</span>
+          </div>
+          ${p.theme ? `<div class="header-summary-row"><strong>Theme:</strong> ${escapeHtml(p.theme)}</div>` : ''}
+          ${p.bibleLessons ? `<div class="header-summary-row"><strong>Lessons:</strong> ${escapeHtml(p.bibleLessons)}</div>` : ''}
+        </div>
         <h3 class="editor-main-heading">Songs</h3>
         ${sectionsHtml}
       </div>
@@ -449,6 +457,7 @@ function renderPlaylistEditor() {
     <div class="editor-bottom-actions">
       <button class="btn btn-danger" id="delete-playlist-btn">Delete Playlist</button>
       <div class="editor-bottom-actions-right">
+        <button class="btn btn-secondary" id="lookup-lectionary-btn">Lookup Lessons</button>
         <button class="btn btn-secondary" id="export-doc-btn">Export Doc</button>
         <button class="btn btn-secondary" id="display-from-editor-btn">Display</button>
         <button class="btn btn-primary" id="save-playlist-btn">Save</button>
@@ -471,6 +480,33 @@ function renderPlaylistEditor() {
   document.getElementById('display-from-editor-btn').addEventListener('click', () => openPlaylistDisplay(currentPlaylist.id));
   document.getElementById('export-doc-btn').addEventListener('click', () => {
     window.location.href = `/api/playlists/${encodeURIComponent(currentPlaylist.id)}/export`;
+  });
+
+  document.getElementById('lookup-lectionary-btn').addEventListener('click', async () => {
+    const date = document.getElementById('edit-date').value;
+    if (!date) {
+      alert('Please set a service date first.');
+      return;
+    }
+    const btn = document.getElementById('lookup-lectionary-btn');
+    btn.disabled = true;
+    btn.textContent = 'Looking up...';
+    try {
+      const res = await fetch(`/api/lectionary?date=${encodeURIComponent(date)}`);
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || 'Lookup failed');
+        return;
+      }
+      const data = await res.json();
+      document.getElementById('edit-theme').value = data.theme;
+      document.getElementById('edit-bible-lessons').value = data.bibleLessons.split(', ').join('\n');
+    } catch (_) {
+      alert('Failed to reach the lectionary service.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Lookup Theme & Lessons';
+    }
   });
 
   const deleteModal = document.getElementById('delete-modal');
@@ -574,7 +610,8 @@ async function savePlaylist() {
   const name = document.getElementById('edit-name').value.trim();
   const date = document.getElementById('edit-date').value || null;
   const theme = document.getElementById('edit-theme').value || null;
-  const bibleLessons = document.getElementById('edit-bible-lessons').value || null;
+  const bibleLessonsRaw = document.getElementById('edit-bible-lessons').value.trim();
+  const bibleLessons = bibleLessonsRaw ? bibleLessonsRaw.split('\n').map(s => s.trim()).filter(Boolean).join(', ') : null;
   const googleDoc = document.getElementById('edit-google-doc').value || null;
   const notes = document.getElementById('edit-notes').value || null;
 

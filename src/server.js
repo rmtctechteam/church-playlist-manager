@@ -3,6 +3,7 @@ const path = require('path');
 const { loadAllSongs } = require('./songParser');
 const { createSongsRouter } = require('./routes/songs');
 const { createPlaylistsRouter } = require('./routes/playlists');
+const { createLectionaryRouter } = require('./routes/lectionary');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,7 @@ console.log(`Loaded ${songs.length} song(s) from ${SONGS_DIR}`);
 // API routes
 app.use('/api/songs', createSongsRouter(songs));
 app.use('/api', createPlaylistsRouter(songs));
+app.use('/api/lectionary', createLectionaryRouter());
 
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '..', 'public')));
