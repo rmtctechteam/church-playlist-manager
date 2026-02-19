@@ -449,6 +449,7 @@ function renderPlaylistEditor() {
     <div class="editor-bottom-actions">
       <button class="btn btn-danger" id="delete-playlist-btn">Delete Playlist</button>
       <div class="editor-bottom-actions-right">
+        <button class="btn btn-secondary" id="export-doc-btn">Export Doc</button>
         <button class="btn btn-secondary" id="display-from-editor-btn">Display</button>
         <button class="btn btn-primary" id="save-playlist-btn">Save</button>
       </div>
@@ -468,6 +469,9 @@ function renderPlaylistEditor() {
   // Attach event handlers
   document.getElementById('save-playlist-btn').addEventListener('click', savePlaylist);
   document.getElementById('display-from-editor-btn').addEventListener('click', () => openPlaylistDisplay(currentPlaylist.id));
+  document.getElementById('export-doc-btn').addEventListener('click', () => {
+    window.location.href = `/api/playlists/${encodeURIComponent(currentPlaylist.id)}/export`;
+  });
 
   const deleteModal = document.getElementById('delete-modal');
   document.getElementById('delete-playlist-btn').addEventListener('click', () => {

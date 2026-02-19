@@ -232,4 +232,29 @@ describe('playlist API routes', () => {
     const res = await fetch(`${baseUrl}/api/playlists/nonexistent`, { method: 'DELETE' });
     assert.equal(res.status, 404);
   });
+
+  it('GET /api/playlists/:id/export returns a .docx file', async () => {
+    const createRes = await fetch(`${baseUrl}/api/playlists`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Export Test', type: 'acts', date: '2026-03-01', theme: 'Grace' }),
+    });
+    const pl = await createRes.json();
+
+    const res = await fetch(`${baseUrl}/api/playlists/${pl.id}/export`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-type'), 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    assert.ok(res.headers.get('content-disposition').includes('Export Test.docx'));
+
+    // .docx files are ZIP archives starting with PK magic bytes
+    const buf = Buffer.from(await res.arrayBuffer());
+    assert.ok(buf.length > 0);
+    assert.equal(buf[0], 0x50); // 'P'
+    assert.equal(buf[1], 0x4B); // 'K'
+  });
+
+  it('GET /api/playlists/:id/export returns 404 for missing', async () => {
+    const res = await fetch(`${baseUrl}/api/playlists/nonexistent/export`);
+    assert.equal(res.status, 404);
+  });
 });
