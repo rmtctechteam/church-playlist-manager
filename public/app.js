@@ -491,6 +491,9 @@ function renderPlaylistEditor() {
           <div class="header-summary-row"><strong>Theme:</strong> ${p.theme ? escapeHtml(p.theme) : '<span class="summary-placeholder">Not set</span>'}</div>
           <div class="header-summary-row"><strong>Lessons:</strong> ${p.bibleLessons ? escapeHtml(p.bibleLessons) : '<span class="summary-placeholder">Not set</span>'}</div>
         </div>
+        <div class="editor-lookup-action">
+          <button class="btn btn-secondary" id="lookup-lectionary-btn">Lookup Theme & Lessons</button>
+        </div>
         <h3 class="editor-main-heading">Songs</h3>
         ${sectionsHtml}
       </div>
@@ -498,9 +501,8 @@ function renderPlaylistEditor() {
     <div class="editor-bottom-actions">
       <button class="btn btn-danger" id="delete-playlist-btn">Delete Playlist</button>
       <div class="editor-bottom-actions-right">
-        <button class="btn btn-secondary" id="lookup-lectionary-btn">Lookup Lessons</button>
         <button class="btn btn-secondary" id="export-doc-btn">Export Doc</button>
-        <button class="btn btn-secondary" id="display-from-editor-btn">Display</button>
+        <button class="btn btn-secondary" id="display-from-editor-btn">Display Songs</button>
         <button class="btn btn-primary" id="save-playlist-btn">Save</button>
       </div>
     </div>
@@ -747,7 +749,7 @@ function renderPlaylistDisplay(playlist) {
         return `<div class="display-song">
           <span class="display-song-title">${escapeHtml(song.title || 'Untitled')}</span>
           ${song.key ? `<span class="display-song-key">${escapeHtml(song.key)}</span>` : ''}
-          ${lyricsContent ? `<div class="display-song-lyrics hidden">${lyricsContent}</div>` : ''}
+          ${lyricsContent ? `<div class="display-song-lyrics">${lyricsContent}</div>` : ''}
         </div>`;
       }).join('');
     }
@@ -774,9 +776,13 @@ function renderPlaylistDisplay(playlist) {
       ${googleDocHtml}
       ${notesHtml}
       <div class="display-controls">
-        <label><input type="checkbox" id="show-lyrics-toggle"> Show Lyrics</label>
+        <label><input type="checkbox" id="show-lyrics-toggle" checked> Show Lyrics</label>
       </div>
       ${sectionsHtml}
+      <div class="display-bottom-actions">
+        <button class="btn btn-secondary" id="display-export-doc-btn">Export Doc</button>
+        <button class="btn btn-secondary" id="display-go-back-btn">Go Back</button>
+      </div>
     </div>
   `;
 
@@ -784,6 +790,14 @@ function renderPlaylistDisplay(playlist) {
     playlistDisplayEl.querySelectorAll('.display-song-lyrics').forEach(el => {
       el.classList.toggle('hidden', !e.target.checked);
     });
+  });
+
+  document.getElementById('display-export-doc-btn').addEventListener('click', () => {
+    window.location.href = `/api/playlists/${encodeURIComponent(playlist.id)}/export`;
+  });
+
+  document.getElementById('display-go-back-btn').addEventListener('click', () => {
+    openPlaylistEditor(playlist.id);
   });
 }
 

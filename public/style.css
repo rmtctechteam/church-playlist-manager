@@ -703,6 +703,10 @@ main:has(#home-view:not(.hidden)) {
   font-style: italic;
 }
 
+.editor-lookup-action {
+  margin-bottom: 1.25rem;
+}
+
 .editor-main-heading {
   margin: 0 0 1rem;
   font-size: 1.2rem;
@@ -1017,12 +1021,21 @@ main:has(#home-view:not(.hidden)) {
   padding-left: 0.75rem;
 }
 
+.display-bottom-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding-top: 2rem;
+  margin-top: 2rem;
+  border-top: 1px solid var(--gray-200);
+}
+
 /* Print styles */
 @media print {
   header, .tab-bar, .subtab-bar, .back-link, .btn, .display-controls,
   #back-btn, #new-playlist-btn, .editor-actions,
   .playlist-card-actions, .section-add-song, .song-controls,
-  #home-view {
+  #home-view, .display-bottom-actions {
     display: none !important;
   }
 
