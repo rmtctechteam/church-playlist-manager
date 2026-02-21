@@ -43,6 +43,20 @@ function createSongsRouter(songs) {
     res.json(scored.map(s => toSummary(s.song)));
   });
 
+  // GET /api/songs/used?since=YYYY-MM-DD — song IDs used since date
+  router.get('/used', (req, res) => {
+    const since = req.query.since;
+    if (!since) {
+      return res.status(400).json({ error: 'Missing required query parameter: since' });
+    }
+    res.json(usageStore.getSongsUsedSince(since));
+  });
+
+  // GET /api/songs/usage-summary — bulk usage summary for all songs
+  router.get('/usage-summary', (req, res) => {
+    res.json(usageStore.getUsageSummary());
+  });
+
   // GET /api/songs/:id/usage — usage history for a song
   router.get('/:id/usage', (req, res) => {
     res.json(usageStore.getUsageForSong(req.params.id));

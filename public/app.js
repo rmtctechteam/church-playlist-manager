@@ -1,10 +1,9 @@
 // === DOM Elements ===
 const searchInput = document.getElementById('search-input');
 const songList = document.getElementById('song-list');
-const songListView = document.getElementById('song-list-view');
-const songDetailView = document.getElementById('song-detail-view');
-const songDetail = document.getElementById('song-detail');
-const backBtn = document.getElementById('back-btn');
+const songDetailPanel = document.getElementById('song-detail-panel');
+const songFilter = document.getElementById('song-filter');
+const songSort = document.getElementById('song-sort');
 
 const songsTab = document.getElementById('songs-tab');
 const playlistsTab = document.getElementById('playlists-tab');
@@ -50,7 +49,9 @@ function navigateToSection(section) {
   songsTab.classList.toggle('hidden', section !== 'songs');
   playlistsTab.classList.toggle('hidden', section !== 'playlists');
   if (section === 'playlists') loadPlaylistList();
-  if (section === 'songs') fetchSongs().then(renderSongList);
+  if (section === 'songs') {
+    fetchSongs().then(songs => { allSongs = songs; renderSongList(allSongs); });
+  }
 }
 
 homeLink.addEventListener('click', showHome);
@@ -82,6 +83,11 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 // === Songs Tab ===
+let allSongs = [];
+let usageSummaryCache = null;
+let filteredSongIds = null;
+let activeSongId = null;
+
 async function fetchSongs(query) {
   const url = query ? `/api/songs?q=${encodeURIComponent(query)}` : '/api/songs';
   const res = await fetch(url);
@@ -94,45 +100,105 @@ async function fetchSongDetail(id) {
   return res.json();
 }
 
+async function ensureUsageSummary() {
+  if (!usageSummaryCache) {
+    const res = await fetch('/api/songs/usage-summary');
+    usageSummaryCache = await res.json();
+  }
+  return usageSummaryCache;
+}
+
+function applySortAndFilter(songs) {
+  let result = [...songs];
+
+  // Apply filter
+  if (filteredSongIds) {
+    const idSet = new Set(filteredSongIds);
+    result = result.filter(s => idSet.has(s.id));
+  }
+
+  // Apply sort
+  const sortValue = songSort.value;
+  if (sortValue === 'title-za') {
+    result.sort((a, b) => (b.title || '').localeCompare(a.title || ''));
+  } else if (sortValue === 'last-used' && usageSummaryCache) {
+    result.sort((a, b) => {
+      const aDate = usageSummaryCache[a.id]?.lastUsed || '';
+      const bDate = usageSummaryCache[b.id]?.lastUsed || '';
+      return bDate.localeCompare(aDate);
+    });
+  } else if (sortValue === 'most-used' && usageSummaryCache) {
+    result.sort((a, b) => {
+      const aCount = usageSummaryCache[a.id]?.count || 0;
+      const bCount = usageSummaryCache[b.id]?.count || 0;
+      return bCount - aCount;
+    });
+  } else {
+    result.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  }
+
+  return result;
+}
+
 function renderSongList(songs) {
   songList.innerHTML = '';
-  if (songs.length === 0) {
+  const sorted = applySortAndFilter(songs);
+  if (sorted.length === 0) {
     songList.innerHTML = '<li class="empty">No songs found</li>';
     return;
   }
-  for (const song of songs) {
+  for (const song of sorted) {
     const li = document.createElement('li');
-    li.className = 'song-item';
-    li.innerHTML = `
-      <span class="song-title">${escapeHtml(song.title || 'Untitled')}</span>
-      <span class="song-artist">${escapeHtml(song.artist || 'Unknown artist')}</span>
-    `;
-    li.addEventListener('click', () => showSongDetail(song.id));
+    li.className = 'song-item' + (song.id === activeSongId ? ' active' : '');
+    li.innerHTML = `<span class="song-title">${escapeHtml(song.title || 'Untitled')}</span>`;
+    li.addEventListener('click', () => selectSong(song.id));
     songList.appendChild(li);
   }
 }
 
-async function renderSongDetail(song) {
-  const metaHtml = `
-    <h2>${escapeHtml(song.title || 'Untitled')}</h2>
-    <div class="song-meta">
-      <span><strong>Artist:</strong> ${escapeHtml(song.artist || 'Unknown')}</span>
-      ${song.key ? `<span><strong>Key:</strong> ${escapeHtml(song.key)}</span>` : ''}
-      ${song.tempo ? `<span><strong>Tempo:</strong> ${escapeHtml(song.tempo)}</span>` : ''}
-    </div>
-  `;
+async function selectSong(id) {
+  activeSongId = id;
+  // Update active class in list
+  songList.querySelectorAll('.song-item').forEach((li, i) => {
+    li.classList.toggle('active', li.querySelector('.song-title')?.textContent === document.querySelector(`.song-item.active`)?.querySelector('.song-title')?.textContent);
+  });
+  // Simpler: re-highlight by re-querying
+  songList.querySelectorAll('.song-item').forEach(li => li.classList.remove('active'));
+  const items = songList.querySelectorAll('.song-item');
+  items.forEach(li => {
+    // Match by click handler — instead, just refetch and render detail
+  });
 
-  // Fetch usage info
-  let usageHtml = '';
-  try {
-    const res = await fetch(`/api/songs/${encodeURIComponent(song.id)}/usage`);
-    const usage = await res.json();
-    if (usage.count > 0) {
-      usageHtml = `<div class="usage-info">Used <strong>${usage.count}</strong> time${usage.count !== 1 ? 's' : ''} &middot; Last used: ${usage.lastUsed}</div>`;
-    } else {
-      usageHtml = `<div class="usage-info">Not yet used in any playlist</div>`;
+  // Show loading state
+  songDetailPanel.innerHTML = '<div class="song-detail-placeholder"><p>Loading...</p></div>';
+
+  const [song, summary] = await Promise.all([
+    fetchSongDetail(id),
+    ensureUsageSummary(),
+  ]);
+
+  if (!song) {
+    songDetailPanel.innerHTML = '<div class="song-detail-placeholder"><p>Song not found</p></div>';
+    return;
+  }
+
+  // Re-highlight active in list
+  songList.querySelectorAll('.song-item').forEach(li => {
+    li.classList.remove('active');
+  });
+  // Find the clicked item by iterating and matching
+  const allItems = songList.querySelectorAll('.song-item');
+  allItems.forEach(li => {
+    const titleEl = li.querySelector('.song-title');
+    if (titleEl && titleEl.textContent === (song.title || 'Untitled')) {
+      li.classList.add('active');
     }
-  } catch (_) { /* ignore usage fetch errors */ }
+  });
+
+  const lastUsed = summary[id]?.lastUsed;
+  const usageHtml = lastUsed
+    ? `<div class="detail-last-used">Last added to a playlist: ${lastUsed}</div>`
+    : `<div class="detail-last-used">Never used in a playlist</div>`;
 
   const lyricsHtml = song.lyrics.map(section => `
     <div class="lyrics-section">
@@ -140,31 +206,51 @@ async function renderSongDetail(song) {
     </div>
   `).join('');
 
-  songDetail.innerHTML = metaHtml + usageHtml + '<div class="lyrics">' + lyricsHtml + '</div>';
+  songDetailPanel.innerHTML = `
+    <div class="song-detail-content">
+      <h2>${escapeHtml(song.title || 'Untitled')}</h2>
+      ${song.key ? `<div class="detail-key">Key: ${escapeHtml(song.key)}</div>` : ''}
+      ${usageHtml}
+      <div class="detail-lyrics">${lyricsHtml}</div>
+    </div>
+  `;
 }
 
-async function showSongDetail(id) {
-  const song = await fetchSongDetail(id);
-  if (!song) return;
-  await renderSongDetail(song);
-  songListView.classList.add('hidden');
-  songDetailView.classList.remove('hidden');
-}
-
-function showSongList() {
-  songDetailView.classList.add('hidden');
-  songListView.classList.remove('hidden');
+async function loadAndRenderSongs() {
+  const query = searchInput.value.trim();
+  const songs = await fetchSongs(query);
+  if (!query) allSongs = songs;
+  renderSongList(query ? songs : allSongs);
 }
 
 searchInput.addEventListener('input', () => {
   clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(async () => {
-    const songs = await fetchSongs(searchInput.value.trim());
-    renderSongList(songs);
-  }, 200);
+  debounceTimer = setTimeout(() => loadAndRenderSongs(), 200);
 });
 
-backBtn.addEventListener('click', showSongList);
+songFilter.addEventListener('change', async () => {
+  const val = songFilter.value;
+  if (val === 'all') {
+    filteredSongIds = null;
+  } else {
+    await ensureUsageSummary();
+    const days = parseInt(val);
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    const dateStr = since.toISOString().split('T')[0];
+    const res = await fetch(`/api/songs/used?since=${dateStr}`);
+    filteredSongIds = await res.json();
+  }
+  renderSongList(searchInput.value.trim() ? await fetchSongs(searchInput.value.trim()) : allSongs);
+});
+
+songSort.addEventListener('change', async () => {
+  const val = songSort.value;
+  if (val === 'last-used' || val === 'most-used') {
+    await ensureUsageSummary();
+  }
+  renderSongList(searchInput.value.trim() ? await fetchSongs(searchInput.value.trim()) : allSongs);
+});
 
 // === Playlists Tab ===
 

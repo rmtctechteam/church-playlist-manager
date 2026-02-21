@@ -62,4 +62,28 @@ function removeForPlaylist(playlistId) {
   save(filtered);
 }
 
-module.exports = { getUsageForSong, syncForPlaylist, removeForPlaylist };
+function getSongsUsedSince(dateStr) {
+  const records = load();
+  const ids = new Set();
+  for (const r of records) {
+    if (r.date >= dateStr) ids.add(r.songId);
+  }
+  return [...ids];
+}
+
+function getUsageSummary() {
+  const records = load();
+  const summary = {};
+  for (const r of records) {
+    if (!summary[r.songId]) {
+      summary[r.songId] = { count: 0, lastUsed: r.date };
+    }
+    summary[r.songId].count++;
+    if (r.date > summary[r.songId].lastUsed) {
+      summary[r.songId].lastUsed = r.date;
+    }
+  }
+  return summary;
+}
+
+module.exports = { getUsageForSong, syncForPlaylist, removeForPlaylist, getSongsUsedSince, getUsageSummary };

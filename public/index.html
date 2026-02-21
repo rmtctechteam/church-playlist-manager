@@ -40,15 +40,32 @@
 
     <!-- Songs tab -->
     <div id="songs-tab" class="hidden">
-      <div id="song-list-view">
-        <div class="search-bar">
-          <input type="text" id="search-input" placeholder="Search songs by title, artist, or lyrics..." autocomplete="off">
+      <div class="songs-split-panel">
+        <div class="songs-left-panel">
+          <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search songs..." autocomplete="off">
+          </div>
+          <div class="songs-controls">
+            <select id="song-filter">
+              <option value="all">All Songs</option>
+              <option value="7">Last Week</option>
+              <option value="30">Last Month</option>
+              <option value="90">Last 3 Months</option>
+            </select>
+            <select id="song-sort">
+              <option value="title-az">Title A-Z</option>
+              <option value="title-za">Title Z-A</option>
+              <option value="last-used">Last Used</option>
+              <option value="most-used">Most Used</option>
+            </select>
+          </div>
+          <ul id="song-list"></ul>
         </div>
-        <ul id="song-list"></ul>
-      </div>
-      <div id="song-detail-view" class="hidden">
-        <button id="back-btn">&larr; Back to songs</button>
-        <div id="song-detail"></div>
+        <div class="songs-right-panel" id="song-detail-panel">
+          <div class="song-detail-placeholder">
+            <p>Select a song to view details</p>
+          </div>
+        </div>
       </div>
     </div>
 
