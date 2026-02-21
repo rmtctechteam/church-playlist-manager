@@ -8,13 +8,36 @@
 </head>
 <body>
   <header>
-    <h1>Church Playlist Manager</h1>
-    <nav class="tab-bar">
-      <button class="tab active" data-tab="playlists">Service Playlists</button>
+    <h1><a id="home-link">Church Playlist Manager</a></h1>
+    <nav class="tab-bar hidden">
+      <button class="tab" data-tab="playlists">Service Playlists</button>
       <button class="tab" data-tab="songs">Songs</button>
     </nav>
   </header>
   <main>
+    <!-- Home view -->
+    <div id="home-view">
+      <h2 class="home-title">Church Playlist Manager</h2>
+      <p class="home-subtitle">Manage worship services, playlists, and songs</p>
+      <div class="bento-grid">
+        <div class="bento-card bento-card-create" id="bento-create-playlist">
+          <span class="bento-icon">+</span>
+          <span class="bento-label">Create Playlist</span>
+          <span class="bento-description">Start a new service playlist</span>
+        </div>
+        <div class="bento-card bento-card-playlists" id="bento-list-playlists">
+          <span class="bento-icon">&#9835;</span>
+          <span class="bento-label">List Playlists</span>
+          <span class="bento-description">View and manage service playlists</span>
+        </div>
+        <div class="bento-card bento-card-songs" id="bento-all-songs">
+          <span class="bento-icon">&#9833;</span>
+          <span class="bento-label">All Songs</span>
+          <span class="bento-description">Browse the full song library</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Songs tab -->
     <div id="songs-tab" class="hidden">
       <div id="song-list-view">
@@ -30,7 +53,7 @@
     </div>
 
     <!-- Playlists tab -->
-    <div id="playlists-tab">
+    <div id="playlists-tab" class="hidden">
       <div id="playlist-list-view">
         <div class="playlist-header">
           <h2>Service Playlists</h2>

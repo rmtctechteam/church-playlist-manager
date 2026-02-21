@@ -18,6 +18,10 @@ const newPlaylistBtn = document.getElementById('new-playlist-btn');
 const editorBackBtn = document.getElementById('editor-back-btn');
 const displayBackBtn = document.getElementById('display-back-btn');
 
+const homeView = document.getElementById('home-view');
+const homeLink = document.getElementById('home-link');
+const tabBar = document.querySelector('.tab-bar');
+
 let debounceTimer = null;
 let serviceTypes = [];
 
@@ -27,6 +31,43 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// === Home / Navigation ===
+function showHome() {
+  homeView.classList.remove('hidden');
+  songsTab.classList.add('hidden');
+  playlistsTab.classList.add('hidden');
+  tabBar.classList.add('hidden');
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+}
+
+function navigateToSection(section) {
+  homeView.classList.add('hidden');
+  tabBar.classList.remove('hidden');
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === section);
+  });
+  songsTab.classList.toggle('hidden', section !== 'songs');
+  playlistsTab.classList.toggle('hidden', section !== 'playlists');
+  if (section === 'playlists') loadPlaylistList();
+  if (section === 'songs') fetchSongs().then(renderSongList);
+}
+
+homeLink.addEventListener('click', showHome);
+
+// Bento card handlers
+document.getElementById('bento-create-playlist').addEventListener('click', () => {
+  navigateToSection('playlists');
+  loadServiceTypes().then(() => showNewPlaylistForm());
+});
+
+document.getElementById('bento-list-playlists').addEventListener('click', () => {
+  navigateToSection('playlists');
+});
+
+document.getElementById('bento-all-songs').addEventListener('click', () => {
+  navigateToSection('songs');
+});
 
 // === Tab Navigation ===
 document.querySelectorAll('.tab').forEach(tab => {
@@ -444,11 +485,11 @@ function renderPlaylistEditor() {
       <div class="editor-main">
         <div class="editor-header-summary">
           <div class="header-summary-row">
-            <span><strong>Date:</strong> ${p.date || 'Not set'}</span>
+            <span><strong>Date:</strong> ${p.date || '<span class="summary-placeholder">Not set</span>'}</span>
             <span><strong>Type:</strong> ${escapeHtml(getServiceTypeName(p.type))}</span>
           </div>
-          ${p.theme ? `<div class="header-summary-row"><strong>Theme:</strong> ${escapeHtml(p.theme)}</div>` : ''}
-          ${p.bibleLessons ? `<div class="header-summary-row"><strong>Lessons:</strong> ${escapeHtml(p.bibleLessons)}</div>` : ''}
+          <div class="header-summary-row"><strong>Theme:</strong> ${p.theme ? escapeHtml(p.theme) : '<span class="summary-placeholder">Not set</span>'}</div>
+          <div class="header-summary-row"><strong>Lessons:</strong> ${p.bibleLessons ? escapeHtml(p.bibleLessons) : '<span class="summary-placeholder">Not set</span>'}</div>
         </div>
         <h3 class="editor-main-heading">Songs</h3>
         ${sectionsHtml}
@@ -747,5 +788,5 @@ function renderPlaylistDisplay(playlist) {
 }
 
 // === Init ===
-fetchSongs().then(renderSongList);
-loadServiceTypes().then(() => loadPlaylistList());
+loadServiceTypes();
+showHome();
