@@ -531,12 +531,14 @@ main:has(#home-view:not(.hidden)) {
 }
 
 .btn-danger {
-  background: var(--red-500);
-  color: white;
+  background: transparent;
+  color: var(--red-500);
+  border-color: transparent;
 }
 
 .btn-danger:hover {
-  background: var(--red-600);
+  background: var(--red-50, #fef2f2);
+  border-color: var(--red-200, #fecaca);
 }
 
 .btn-small {
@@ -712,6 +714,7 @@ main:has(#home-view:not(.hidden)) {
 .form-group select,
 .form-group textarea {
   width: 100%;
+  box-sizing: border-box;
   padding: 0.65rem 0.9rem;
   font-size: 0.95rem;
   border: 1.5px solid var(--gray-200);
@@ -918,6 +921,17 @@ main:has(#home-view:not(.hidden)) {
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
+}
+
+.modal-actions .btn-danger {
+  background: var(--red-500);
+  color: white;
+  border-color: var(--red-500);
+}
+
+.modal-actions .btn-danger:hover {
+  background: var(--red-600, #dc2626);
+  border-color: var(--red-600, #dc2626);
 }
 
 /* Section editor */
@@ -1237,7 +1251,7 @@ main:has(#home-view:not(.hidden)) {
     flex-wrap: wrap;
   }
 
-  /* Editor bottom actions: stack */
+  /* Editor bottom actions: stack with Save first, Delete last */
   .editor-bottom-actions {
     flex-direction: column;
     gap: 0.75rem;
@@ -1247,6 +1261,11 @@ main:has(#home-view:not(.hidden)) {
   .editor-bottom-actions-right {
     flex-wrap: wrap;
     justify-content: flex-end;
+    order: -1;
+  }
+
+  #delete-playlist-btn {
+    order: 1;
   }
 
   /* Display container: less padding */
