@@ -79,6 +79,8 @@ The app is configured for deployment on Railway:
 - [ ] Google Analytics integration
 - [ ] Song suggestions based on Bible lessons and weekly theme
 - [x] Add Song Keys as a related record or information to each song
-- [ ] Create a Sunday song version that is separate from the master song list 
+- [x] Music section per song — key chip + freeform notes field (parsed from song files, shown in detail panel)
+- [x] Per-song music overrides in playlists — key, tempo, and notes editable per song per service
+- [ ] Create a Sunday song version that is separate from the master song list
 - [x] Song search results - show the first 2 lines in search results along with the song title
 - [x] Mobile responsiveness fixes
