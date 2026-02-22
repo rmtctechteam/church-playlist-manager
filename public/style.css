@@ -973,7 +973,11 @@ main:has(#home-view:not(.hidden)) {
 
 .section-song-item .song-info {
   flex: 1;
+  min-width: 0;
   font-size: 0.95rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .section-song-item .song-info .key-badge {
@@ -995,14 +999,14 @@ main:has(#home-view:not(.hidden)) {
 }
 
 .override-input {
-  flex: 0 0 6rem;
+  flex: 1 1 5rem;
+  min-width: 0;
   font-size: 0.78rem;
   padding: 0.2rem 0.4rem;
   border: 1px solid var(--gray-300);
   border-radius: var(--radius-sm);
   background: white;
   color: var(--gray-700);
-  min-width: 0;
 }
 
 .override-input:focus {
@@ -1342,6 +1346,15 @@ main:has(#home-view:not(.hidden)) {
   /* Section heading: tighter */
   .section-heading {
     padding: 0.75rem 1rem;
+  }
+
+  /* Song override inputs: allow wrapping so notes goes full-width */
+  .song-override-row {
+    flex-wrap: wrap;
+  }
+
+  .override-input--notes {
+    flex: 1 1 100%;
   }
 }
 
