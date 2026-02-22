@@ -17,9 +17,17 @@ describe('playlist API routes', () => {
     try { plBackup = fs.readFileSync(playlistsFile, 'utf-8'); } catch (_) { plBackup = null; }
     try { usBackup = fs.readFileSync(usageFile, 'utf-8'); } catch (_) { usBackup = null; }
 
+    // Use in-memory SQLite for test isolation
+    process.env.ANALYTICS_DB_PATH = ':memory:';
+
+    // Clear data files BEFORE requiring server to prevent migration from importing real data
+    try { fs.writeFileSync(playlistsFile, '[]'); } catch (_) {}
+    try { fs.writeFileSync(usageFile, '[]'); } catch (_) {}
+
     // Clear module cache and start fresh
     delete require.cache[require.resolve('../src/playlistStore')];
     delete require.cache[require.resolve('../src/usageStore')];
+    delete require.cache[require.resolve('../src/analyticsDb')];
     delete require.cache[require.resolve('../src/routes/playlists')];
     delete require.cache[require.resolve('../src/routes/songs')];
     delete require.cache[require.resolve('../src/server')];
@@ -37,6 +45,8 @@ describe('playlist API routes', () => {
     // Clean data files before each test
     try { fs.writeFileSync(playlistsFile, '[]'); } catch (_) {}
     try { fs.writeFileSync(usageFile, '[]'); } catch (_) {}
+    // Reset in-memory SQLite DB between tests
+    try { require('../src/analyticsDb')._resetForTesting(); } catch (_) {}
   });
 
   after(async () => {

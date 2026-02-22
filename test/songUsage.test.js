@@ -16,8 +16,15 @@ describe('GET /api/songs/:id/usage', () => {
     try { plBackup = fs.readFileSync(playlistsFile, 'utf-8'); } catch (_) { plBackup = null; }
     try { usBackup = fs.readFileSync(usageFile, 'utf-8'); } catch (_) { usBackup = null; }
 
+    process.env.ANALYTICS_DB_PATH = ':memory:';
+
+    // Clear data files BEFORE requiring server to prevent migration from importing real data
+    try { fs.writeFileSync(playlistsFile, '[]'); } catch (_) {}
+    try { fs.writeFileSync(usageFile, '[]'); } catch (_) {}
+
     delete require.cache[require.resolve('../src/playlistStore')];
     delete require.cache[require.resolve('../src/usageStore')];
+    delete require.cache[require.resolve('../src/analyticsDb')];
     delete require.cache[require.resolve('../src/routes/playlists')];
     delete require.cache[require.resolve('../src/routes/songs')];
     delete require.cache[require.resolve('../src/server')];
@@ -34,6 +41,7 @@ describe('GET /api/songs/:id/usage', () => {
   beforeEach(() => {
     try { fs.writeFileSync(playlistsFile, '[]'); } catch (_) {}
     try { fs.writeFileSync(usageFile, '[]'); } catch (_) {}
+    try { require('../src/analyticsDb')._resetForTesting(); } catch (_) {}
   });
 
   after(async () => {

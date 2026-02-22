@@ -4,6 +4,7 @@ const { loadAllSongs } = require('./songParser');
 const { createSongsRouter } = require('./routes/songs');
 const { createPlaylistsRouter } = require('./routes/playlists');
 const { createLectionaryRouter } = require('./routes/lectionary');
+const analyticsDb = require('./analyticsDb');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -15,6 +16,10 @@ app.use(express.json());
 // Load songs into memory
 const songs = loadAllSongs(SONGS_DIR);
 console.log(`Loaded ${songs.length} song(s) from ${SONGS_DIR}`);
+
+// Initialize analytics DB and run one-time migration (after songs are loaded)
+const songsMap = new Map(songs.map(s => [s.id, s]));
+analyticsDb.initialize(songsMap);
 
 // API routes
 app.use('/api/songs', createSongsRouter(songs));

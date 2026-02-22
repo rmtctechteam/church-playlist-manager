@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const usageStore = require('../usageStore');
+const analyticsDb = require('../analyticsDb');
 
 function createSongsRouter(songs) {
   // Strip lyrics from a song for list responses
@@ -49,17 +49,37 @@ function createSongsRouter(songs) {
     if (!since) {
       return res.status(400).json({ error: 'Missing required query parameter: since' });
     }
-    res.json(usageStore.getSongsUsedSince(since));
+    res.json(analyticsDb.getSongsUsedSince(since));
   });
 
   // GET /api/songs/usage-summary — bulk usage summary for all songs
   router.get('/usage-summary', (req, res) => {
-    res.json(usageStore.getUsageSummary());
+    res.json(analyticsDb.getUsageSummary());
+  });
+
+  // GET /api/songs/analytics/frequency — song frequency report
+  router.get('/analytics/frequency', (req, res) => {
+    res.json(analyticsDb.getSongFrequencyReport(req.query.since || null));
   });
 
   // GET /api/songs/:id/usage — usage history for a song
   router.get('/:id/usage', (req, res) => {
-    res.json(usageStore.getUsageForSong(req.params.id));
+    res.json(analyticsDb.getUsageForSong(req.params.id));
+  });
+
+  // GET /api/songs/:id/analytics/by-service-type
+  router.get('/:id/analytics/by-service-type', (req, res) => {
+    res.json(analyticsDb.getUsageByServiceType(req.params.id));
+  });
+
+  // GET /api/songs/:id/analytics/by-section
+  router.get('/:id/analytics/by-section', (req, res) => {
+    res.json(analyticsDb.getUsageBySection(req.params.id));
+  });
+
+  // GET /api/songs/:id/analytics/detail
+  router.get('/:id/analytics/detail', (req, res) => {
+    res.json(analyticsDb.getSongUsageDetail(req.params.id));
   });
 
   // GET /api/songs/:id — full song details with lyrics

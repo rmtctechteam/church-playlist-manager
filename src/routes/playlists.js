@@ -2,10 +2,11 @@ const express = require('express');
 const { Document, Packer, Paragraph, TextRun, HeadingLevel } = require('docx');
 const { getAllServiceTypes, getServiceType, isValidType } = require('../serviceTypes');
 const playlistStore = require('../playlistStore');
-const usageStore = require('../usageStore');
+const analyticsDb = require('../analyticsDb');
 
 function createPlaylistsRouter(songs) {
   const router = express.Router();
+  const songsMap = new Map(songs.map(s => [s.id, s]));
 
   function resolveSongs(songIds) {
     return songIds.map(songId => {
@@ -140,7 +141,7 @@ function createPlaylistsRouter(songs) {
     }
 
     const playlist = playlistStore.create({ name: name.trim(), type, date, theme, bibleLessons, googleDoc, notes, sections });
-    usageStore.syncForPlaylist(playlist);
+    analyticsDb.syncForPlaylist(playlist, songsMap);
     res.status(201).json(playlist);
   });
 
@@ -204,7 +205,7 @@ function createPlaylistsRouter(songs) {
       return res.status(404).json({ error: 'Playlist not found' });
     }
 
-    usageStore.syncForPlaylist(updated);
+    analyticsDb.syncForPlaylist(updated, songsMap);
     res.json(updated);
   });
 
@@ -215,7 +216,7 @@ function createPlaylistsRouter(songs) {
       return res.status(404).json({ error: 'Playlist not found' });
     }
 
-    usageStore.removeForPlaylist(req.params.id);
+    analyticsDb.removeForPlaylist(req.params.id);
     res.status(204).end();
   });
 
