@@ -8,10 +8,17 @@ function createPlaylistsRouter(songs) {
   const router = express.Router();
   const songsMap = new Map(songs.map(s => [s.id, s]));
 
-  function resolveSongs(songIds) {
-    return songIds.map(songId => {
-      const song = songs.find(s => s.id === songId);
-      return song || { id: songId, notFound: true };
+  function resolveSongs(sectionSongs) {
+    return sectionSongs.map(entry => {
+      const master = songs.find(s => s.id === entry.id);
+      if (!master) return { id: entry.id, notFound: true };
+      return {
+        ...master,
+        key: entry.key ?? master.key,
+        tempo: entry.tempo ?? master.tempo,
+        notes: entry.notes ?? master.notes,
+        _override: { key: entry.key, tempo: entry.tempo, notes: entry.notes },
+      };
     });
   }
 
@@ -53,12 +60,15 @@ function createPlaylistsRouter(songs) {
       for (const song of songs) {
         children.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun(song.title || 'Untitled')] }));
 
-        // Key / Tempo meta line
+        // Key / Tempo / Notes meta line
         const metaParts = [];
         if (song.key) metaParts.push(`Key: ${song.key}`);
         if (song.tempo) metaParts.push(`Tempo: ${song.tempo}`);
         if (metaParts.length > 0) {
           children.push(new Paragraph({ children: [new TextRun({ text: metaParts.join(' | '), italics: true })] }));
+        }
+        if (song.notes) {
+          children.push(new Paragraph({ children: [new TextRun({ text: `Notes: ${song.notes}`, italics: true, color: '555555' })] }));
         }
 
         // Lyrics — blank line between each lyric section to preserve original spacing
@@ -156,7 +166,7 @@ function createPlaylistsRouter(songs) {
       ...playlist,
       sections: playlist.sections.map(section => ({
         ...section,
-        songs: resolveSongs(section.songIds),
+        songs: resolveSongs(section.songs || []),
       })),
     };
 
@@ -174,7 +184,7 @@ function createPlaylistsRouter(songs) {
       ...playlist,
       sections: playlist.sections.map(section => ({
         ...section,
-        songs: resolveSongs(section.songIds),
+        songs: resolveSongs(section.songs || []),
       })),
     };
 

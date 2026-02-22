@@ -324,10 +324,41 @@ main:has(#home-view:not(.hidden)) {
   letter-spacing: -0.025em;
 }
 
-.song-detail-content .detail-key {
+.song-music-section {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--gray-50);
+}
+
+.song-music-section h4 {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray-400);
+  margin: 0 0 0.5rem 0;
+}
+
+.song-music-section .detail-key {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  background: white;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  padding: 0.15rem 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.music-notes {
   font-size: 0.9rem;
-  color: var(--gray-500);
-  margin-bottom: 1rem;
+  color: var(--gray-700);
+  white-space: pre-wrap;
+  margin-top: 0.5rem;
+  line-height: 1.6;
 }
 
 .song-detail-content .detail-last-used {
@@ -914,6 +945,7 @@ main:has(#home-view:not(.hidden)) {
 
 .section-song-item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   padding: 0.65rem 0.85rem;
@@ -939,6 +971,33 @@ main:has(#home-view:not(.hidden)) {
 .section-song-item .song-controls {
   display: flex;
   gap: 0.25rem;
+}
+
+.song-override-row {
+  width: 100%;
+  display: flex;
+  gap: 0.4rem;
+  padding-top: 0.25rem;
+}
+
+.override-input {
+  flex: 0 0 6rem;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--gray-700);
+  min-width: 0;
+}
+
+.override-input:focus {
+  outline: none;
+  border-color: var(--teal-400);
+}
+
+.override-input--notes {
+  flex: 1;
 }
 
 .section-add-song {
@@ -1082,6 +1141,20 @@ main:has(#home-view:not(.hidden)) {
   font-weight: 600;
   font-size: 1.05rem;
   color: var(--gray-900);
+}
+
+.display-song-meta {
+  font-size: 0.82rem;
+  color: var(--gray-500);
+  margin-top: 0.15rem;
+}
+
+.display-song-notes {
+  font-size: 0.85rem;
+  color: var(--gray-600);
+  font-style: italic;
+  margin-top: 0.25rem;
+  white-space: pre-wrap;
 }
 
 .display-song-key {

@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Parse song metadata from text files
-The song parser SHALL read a `.txt` file from the `songs/` directory and extract metadata fields from the header: Title, Artist, Key, and Tempo. Each field appears on its own line in `Field: Value` format. The metadata section ends at the first blank line.
+The song parser SHALL read a `.txt` file from the `songs/` directory and extract metadata fields from the header: Title, Artist, Key, Tempo, and Notes. Each field appears on its own line in `Field: Value` format. The metadata section ends at the first blank line.
 
 #### Scenario: Parse a well-formed song file
 - **WHEN** the parser reads a file containing `Title: Amazing Grace`, `Artist: John Newton`, `Key: G`, `Tempo: 80 BPM`
@@ -10,6 +10,14 @@ The song parser SHALL read a `.txt` file from the `songs/` directory and extract
 #### Scenario: Missing optional metadata fields
 - **WHEN** a song file omits the Key or Tempo fields
 - **THEN** the parser returns `null` for the missing fields and still parses the remaining metadata and lyrics
+
+#### Scenario: Parse Notes metadata field
+- **WHEN** a song file contains `Notes: Capo 2, play in G`
+- **THEN** the parser returns `notes: "Capo 2, play in G"` in the song object
+
+#### Scenario: Notes field absent
+- **WHEN** a song file has no `Notes:` line in its header
+- **THEN** the parser returns `notes: null` in the song object
 
 ### Requirement: Parse song lyrics into sections
 The song parser SHALL extract lyrics as an ordered array of sections. Sections are delimited by blank lines. Section labels (a line ending in `:`, e.g., `Verse 1:`, `Chorus:`) are optional. When a label is present, it names the section. When no label is present, the section is auto-numbered as `Section N`.

@@ -38,14 +38,22 @@ The system SHALL return all playlists sorted by date descending (most recent fir
 - **THEN** the system returns a 200 response with an empty array
 
 ### Requirement: Get a single playlist with song details
-The system SHALL return a single playlist by ID with each song ID in each section resolved to the full song object (metadata and lyrics). Songs that no longer exist SHALL be represented with the song ID and a `notFound: true` flag.
+The system SHALL return a playlist by ID with each section's songs resolved to full song objects. Each resolved song object SHALL merge playlist-level overrides (key, tempo, notes) on top of the master song values: if an override is set it takes precedence; otherwise the master value is used. Songs that no longer exist SHALL be represented with the song ID and a `notFound: true` flag.
 
 #### Scenario: Get an existing playlist
 - **WHEN** a GET request is sent to `/api/playlists/:id` with a valid playlist ID
-- **THEN** the system returns a 200 response with the playlist and each section's `songIds` resolved to a `songs` array containing full song objects in order
+- **THEN** the system returns a 200 response with the playlist and each section containing a `songs` array of resolved song objects, where each song's `key`, `tempo`, and `notes` reflect the effective value (override if set, master otherwise)
+
+#### Scenario: Song override applied
+- **WHEN** a song slot in a section has `key: "A"` stored as an override and the master song has `key: "G"`
+- **THEN** the resolved song object in the response has `key: "A"`
+
+#### Scenario: No override falls back to master
+- **WHEN** a song slot has `key: null` and the master song has `key: "G"`
+- **THEN** the resolved song object has `key: "G"`
 
 #### Scenario: Get a playlist with a missing song
-- **WHEN** a GET request is sent to `/api/playlists/:id` and one of the `songIds` in a section references a song that no longer exists
+- **WHEN** a GET request is sent to `/api/playlists/:id` and one of the song slots in a section references a song that no longer exists
 - **THEN** the corresponding entry in that section's `songs` array SHALL contain `{ "id": "<songId>", "notFound": true }`
 
 #### Scenario: Get a non-existent playlist
@@ -53,15 +61,19 @@ The system SHALL return a single playlist by ID with each song ID in each sectio
 - **THEN** the system returns a 404 response with an error message
 
 ### Requirement: Update a playlist
-The system SHALL allow updating a playlist's name, sections (including song assignments within sections), date, and notes. The system SHALL update the `updatedAt` timestamp on each update.
+The system SHALL allow updating a playlist's name, sections (including song assignments and per-song music overrides), date, and notes. The system SHALL update the `updatedAt` timestamp on each update.
 
 #### Scenario: Update playlist name
 - **WHEN** a PUT request is sent to `/api/playlists/:id` with `{ "name": "New Name" }`
 - **THEN** the system returns a 200 response with the updated playlist and an updated `updatedAt` timestamp
 
-#### Scenario: Update songs within a section
-- **WHEN** a PUT request is sent to `/api/playlists/:id` with `{ "sections": [{ "name": "Gathering", "songIds": ["Amazing Grace - Traditional", "10000 Reasons"] }, ...] }`
-- **THEN** the system returns a 200 response with the sections updated to reflect the new song assignments
+#### Scenario: Save sections with overrides
+- **WHEN** a PUT request is sent with `sections: [{ name: "Opening", songs: [{ id: "amazing-grace", key: "A", tempo: null, notes: "Capo 2" }] }]`
+- **THEN** the playlist is saved with the override values and a subsequent GET returns them merged into the resolved song
+
+#### Scenario: Backward-compatible read of legacy songIds
+- **WHEN** an existing playlist stored with `songIds: ["amazing-grace"]` is read
+- **THEN** the system normalises it to `songs: [{ id: "amazing-grace", key: null, tempo: null, notes: null }]` transparently, and the response is correct
 
 #### Scenario: Update a non-existent playlist
 - **WHEN** a PUT request is sent to `/api/playlists/:id` with an ID that does not exist

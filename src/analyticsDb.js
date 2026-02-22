@@ -82,7 +82,10 @@ function initialize(songsMap) {
         service_type = playlist.type || null;
         theme = playlist.theme || null;
         bible_lessons = playlist.bibleLessons || null;
-        const section = playlist.sections && playlist.sections.find(s => s.songIds && s.songIds.includes(record.songId));
+        const section = playlist.sections && playlist.sections.find(s => {
+          const ids = s.songs ? s.songs.map(e => e.id) : (s.songIds || []);
+          return ids.includes(record.songId);
+        });
         section_name = section ? section.name : null;
       }
 
@@ -128,14 +131,18 @@ function syncForPlaylist(playlist, songsMap) {
     if (!playlist.date) return;
 
     for (const section of playlist.sections) {
-      for (const songId of section.songIds) {
-        let song_key = null;
-        let song_tempo = null;
-        if (songsMap) {
-          const song = songsMap.get(songId);
-          if (song) {
-            song_key = song.key || null;
-            song_tempo = song.tempo || null;
+      const entries = section.songs
+        ? section.songs
+        : (section.songIds || []).map(id => ({ id, key: null, tempo: null, notes: null }));
+      for (const entry of entries) {
+        const songId = entry.id;
+        let song_key = entry.key || null;
+        let song_tempo = entry.tempo || null;
+        if (songsMap && (!song_key || !song_tempo)) {
+          const master = songsMap.get(songId);
+          if (master) {
+            song_key = song_key || master.key || null;
+            song_tempo = song_tempo || master.tempo || null;
           }
         }
 

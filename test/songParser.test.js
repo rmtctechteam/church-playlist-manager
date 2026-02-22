@@ -57,7 +57,38 @@ describe('parseSongContent', () => {
     assert.equal(song.artist, 'Someone');
     assert.equal(song.key, null);
     assert.equal(song.tempo, null);
+    assert.equal(song.notes, null);
     assert.equal(song.lyrics.length, 1);
+  });
+
+  it('parses Notes metadata field when present', () => {
+    const content = [
+      'Title: Amazing Grace',
+      'Artist: John Newton',
+      'Key: G',
+      'Notes: Capo 2, play in G',
+      '',
+      'Verse 1:',
+      'Amazing grace how sweet the sound',
+    ].join('\n');
+
+    const song = parseSongContent('amazing-grace', content);
+
+    assert.equal(song.notes, 'Capo 2, play in G');
+  });
+
+  it('returns null for notes when Notes field is absent', () => {
+    const content = [
+      'Title: Simple Song',
+      'Key: C',
+      '',
+      'Verse 1:',
+      'Some lyrics here',
+    ].join('\n');
+
+    const song = parseSongContent('simple-song', content);
+
+    assert.equal(song.notes, null);
   });
 
   it('parses multiple labeled sections with blank line separators', () => {

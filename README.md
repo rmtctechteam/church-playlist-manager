@@ -78,7 +78,7 @@ The app is configured for deployment on Railway:
 - [x] Userback integration
 - [ ] Google Analytics integration
 - [ ] Song suggestions based on Bible lessons and weekly theme
-- [ ] Add Song Keys as a related record or information to each song
+- [x] Add Song Keys as a related record or information to each song
 - [ ] Create a Sunday song version that is separate from the master song list 
 - [x] Song search results - show the first 2 lines in search results along with the song title
 - [x] Mobile responsiveness fixes

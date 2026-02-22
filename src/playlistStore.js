@@ -5,6 +5,15 @@ const crypto = require('crypto');
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const PLAYLISTS_FILE = path.join(DATA_DIR, 'playlists.json');
 
+function normaliseSections(sections) {
+  if (!Array.isArray(sections)) return sections;
+  return sections.map(section => {
+    if (section.songs) return section;
+    const songIds = section.songIds || [];
+    return { ...section, songs: songIds.map(id => ({ id, key: null, tempo: null, notes: null })) };
+  });
+}
+
 function load() {
   try {
     const data = fs.readFileSync(PLAYLISTS_FILE, 'utf-8');
@@ -23,11 +32,13 @@ function save(playlists) {
 }
 
 function findAll() {
-  return load();
+  return load().map(p => ({ ...p, sections: normaliseSections(p.sections) }));
 }
 
 function findById(id) {
-  return load().find(p => p.id === id) || null;
+  const p = load().find(p => p.id === id);
+  if (!p) return null;
+  return { ...p, sections: normaliseSections(p.sections) };
 }
 
 function create(playlist) {

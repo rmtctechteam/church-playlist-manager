@@ -1,11 +1,19 @@
 ## ADDED Requirements
 
 ### Requirement: Render playlist display view
-The system SHALL provide a read-only display view for a playlist that shows the playlist name, service type, date, and songs organized by section with each song's title and key. The playlist editor header section SHALL use larger typography and more spacious layout for the playlist name, date, theme, and bible lessons metadata fields.
+The system SHALL provide a read-only display view for a playlist that shows the playlist name, service type, date, and songs organized by section with each song's title, effective key, tempo, and notes. The playlist editor header section SHALL use larger typography and more spacious layout for the playlist name, date, theme, and bible lessons metadata fields.
 
 #### Scenario: View a playlist in display mode
 - **WHEN** the user clicks a "Display" button on a playlist
-- **THEN** the UI shows a clean, read-only view with the playlist name, service type label, date (if set), and songs grouped under their section headings with title and key for each
+- **THEN** the UI shows a clean, read-only view with the playlist name, service type label, date (if set), and songs grouped under their section headings with title, key, tempo, and notes for each (using playlist-level overrides where set, otherwise master song values)
+
+#### Scenario: Display song with key override
+- **WHEN** the Display Playlist view renders a song that has a playlist-level key override
+- **THEN** the override key is shown (not the master song key)
+
+#### Scenario: Display song with notes override
+- **WHEN** the Display Playlist view renders a song that has playlist-level notes set
+- **THEN** the notes text is shown beneath the song title in the display view
 
 #### Scenario: Display a playlist with a missing song
 - **WHEN** the display view is rendered for a playlist containing a song ID in any section that no longer exists

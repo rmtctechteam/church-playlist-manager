@@ -156,6 +156,13 @@ function renderSongList(songs) {
   }
 }
 
+function renderMusicSection(song) {
+  if (!song.key && !song.notes) return '';
+  const keyHtml = song.key ? `<span class="detail-key">Key: ${escapeHtml(song.key)}</span>` : '';
+  const notesHtml = song.notes ? `<div class="music-notes">${escapeHtml(song.notes)}</div>` : '';
+  return `<div class="song-music-section"><h4>Music</h4>${keyHtml}${notesHtml}</div>`;
+}
+
 async function selectSong(id) {
   activeSongId = id;
   // Update active class in list
@@ -209,8 +216,8 @@ async function selectSong(id) {
   songDetailPanel.innerHTML = `
     <div class="song-detail-content">
       <h2>${escapeHtml(song.title || 'Untitled')}</h2>
-      ${song.key ? `<div class="detail-key">Key: ${escapeHtml(song.key)}</div>` : ''}
       ${usageHtml}
+      ${renderMusicSection(song)}
       <div class="detail-lyrics">${lyricsHtml}</div>
     </div>
   `;
@@ -507,16 +514,21 @@ function renderPlaylistEditor() {
             </span>
           </div>`;
         }
+        const ov = song._override || {};
         return `<div class="section-song-item">
           <span class="song-info">
             ${escapeHtml(song.title || 'Untitled')}
-            ${song.key ? `<span class="key-badge">(${escapeHtml(song.key)})</span>` : ''}
           </span>
           <span class="song-controls">
             <button class="btn-icon move-up-btn" data-section="${si}" data-song="${songIdx}" ${songIdx === 0 ? 'disabled' : ''}>&#9650;</button>
             <button class="btn-icon move-down-btn" data-section="${si}" data-song="${songIdx}" ${songIdx === songs.length - 1 ? 'disabled' : ''}>&#9660;</button>
             <button class="btn-icon remove-song-btn" data-section="${si}" data-song="${songIdx}">x</button>
           </span>
+          <div class="song-override-row">
+            <input class="override-input" type="text" placeholder="Key${song.key ? ` (${escapeHtml(song.key)})` : ''}" value="${escapeHtml(ov.key || '')}" data-section="${si}" data-song="${songIdx}" data-field="key">
+            <input class="override-input" type="text" placeholder="Tempo${song.tempo ? ` (${escapeHtml(song.tempo)})` : ''}" value="${escapeHtml(ov.tempo || '')}" data-section="${si}" data-song="${songIdx}" data-field="tempo">
+            <input class="override-input override-input--notes" type="text" placeholder="Notes" value="${escapeHtml(ov.notes || '')}" data-section="${si}" data-song="${songIdx}" data-field="notes">
+          </div>
         </div>`;
       }).join('');
     }
@@ -700,42 +712,57 @@ function renderPlaylistEditor() {
   playlistEditorEl.querySelectorAll('.remove-song-btn').forEach(btn => {
     btn.addEventListener('click', () => removeSongFromSection(parseInt(btn.dataset.section), parseInt(btn.dataset.song)));
   });
+
+  // Music override inputs — update in-memory state without re-rendering
+  playlistEditorEl.querySelectorAll('.override-input').forEach(input => {
+    input.addEventListener('input', () => {
+      const si = parseInt(input.dataset.section);
+      const songIdx = parseInt(input.dataset.song);
+      const field = input.dataset.field;
+      sectionSongs(si)[songIdx][field] = input.value.trim() || null;
+    });
+  });
+}
+
+function sectionSongs(sectionIdx) {
+  const section = currentPlaylist.sections[sectionIdx];
+  if (!section.songs) section.songs = [];
+  return section.songs;
+}
+
+function serialiseSections() {
+  return currentPlaylist.sections.map(s => ({
+    name: s.name,
+    songs: (s.songs || []).map(e => ({ id: e.id, key: e.key || null, tempo: e.tempo || null, notes: e.notes || null })),
+  }));
 }
 
 function addSongToSection(sectionIdx, songId) {
-  currentPlaylist.sections[sectionIdx].songIds.push(songId);
-  // Re-resolve songs by refetching
+  sectionSongs(sectionIdx).push({ id: songId, key: null, tempo: null, notes: null });
   refreshEditor();
 }
 
 function removeSongFromSection(sectionIdx, songIdx) {
-  currentPlaylist.sections[sectionIdx].songIds.splice(songIdx, 1);
+  sectionSongs(sectionIdx).splice(songIdx, 1);
   refreshEditor();
 }
 
 function moveSong(sectionIdx, songIdx, direction) {
-  const ids = currentPlaylist.sections[sectionIdx].songIds;
+  const arr = sectionSongs(sectionIdx);
   const newIdx = songIdx + direction;
-  if (newIdx < 0 || newIdx >= ids.length) return;
-  [ids[songIdx], ids[newIdx]] = [ids[newIdx], ids[songIdx]];
+  if (newIdx < 0 || newIdx >= arr.length) return;
+  [arr[songIdx], arr[newIdx]] = [arr[newIdx], arr[songIdx]];
   refreshEditor();
 }
 
 async function refreshEditor() {
-  // Re-fetch to get resolved songs
-  const res = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
-  if (res.ok) {
-    // Merge local songIds changes first by saving, then re-fetching
-    await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sections: currentPlaylist.sections.map(s => ({ name: s.name, songIds: s.songIds })),
-      }),
-    });
-    const res2 = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
-    if (res2.ok) currentPlaylist = await res2.json();
-  }
+  await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sections: serialiseSections() }),
+  });
+  const res2 = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
+  if (res2.ok) currentPlaylist = await res2.json();
   renderPlaylistEditor();
 }
 
@@ -760,7 +787,7 @@ async function savePlaylist() {
       bibleLessons,
       googleDoc,
       notes,
-      sections: currentPlaylist.sections.map(s => ({ name: s.name, songIds: s.songIds })),
+      sections: serialiseSections(),
     }),
   });
 
@@ -836,9 +863,19 @@ function renderPlaylistDisplay(playlist) {
         const lyricsContent = song.lyrics
           ? song.lyrics.map(s => s.lines.join('<br>')).join('<br><br>')
           : '';
+        const metaParts = [];
+        if (song.key) metaParts.push(`Key: ${escapeHtml(song.key)}`);
+        if (song.tempo) metaParts.push(`Tempo: ${escapeHtml(song.tempo)}`);
+        const metaHtml = metaParts.length
+          ? `<div class="display-song-meta">${metaParts.join(' &nbsp;|&nbsp; ')}</div>`
+          : '';
+        const songNotesHtml = song.notes
+          ? `<div class="display-song-notes">${escapeHtml(song.notes)}</div>`
+          : '';
         return `<div class="display-song">
           <span class="display-song-title">${escapeHtml(song.title || 'Untitled')}</span>
-          ${song.key ? `<span class="display-song-key">${escapeHtml(song.key)}</span>` : ''}
+          ${metaHtml}
+          ${songNotesHtml}
           ${lyricsContent ? `<div class="display-song-lyrics">${lyricsContent}</div>` : ''}
         </div>`;
       }).join('');
