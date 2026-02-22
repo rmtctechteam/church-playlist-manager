@@ -150,7 +150,7 @@ function renderSongList(songs) {
   for (const song of sorted) {
     const li = document.createElement('li');
     li.className = 'song-item' + (song.id === activeSongId ? ' active' : '');
-    li.innerHTML = `<span class="song-title">${escapeHtml(song.title || 'Untitled')}</span>`;
+    li.innerHTML = `<span class="song-title">${escapeHtml(song.title || 'Untitled')}</span>${song.lyricsPreview ? `<span class="song-preview">${escapeHtml(song.lyricsPreview)}</span>` : ''}`;
     li.addEventListener('click', () => selectSong(song.id));
     songList.appendChild(li);
   }
@@ -666,7 +666,11 @@ function renderPlaylistEditor() {
           resultsEl.innerHTML = '<div class="song-search-result">No results</div>';
         } else {
           resultsEl.innerHTML = songs.slice(0, 10).map(s =>
-            `<div class="song-search-result" data-id="${escapeHtml(s.id)}">${escapeHtml(s.title || 'Untitled')} <small style="color:var(--gray-400)">${escapeHtml(s.artist || '')}</small></div>`
+            `<div class="song-search-result" data-id="${escapeHtml(s.id)}">` +
+            `<span class="song-title">${escapeHtml(s.title || 'Untitled')}</span>` +
+            `<small style="color:var(--gray-400)">${escapeHtml(s.artist || '')}</small>` +
+            (s.lyricsPreview ? `<span class="song-preview">${escapeHtml(s.lyricsPreview)}</span>` : '') +
+            `</div>`
           ).join('');
 
           resultsEl.querySelectorAll('.song-search-result').forEach(el => {

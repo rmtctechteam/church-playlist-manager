@@ -3,9 +3,13 @@ const router = express.Router();
 const analyticsDb = require('../analyticsDb');
 
 function createSongsRouter(songs) {
-  // Strip lyrics from a song for list responses
-  function toSummary({ lyrics, ...meta }) {
-    return meta;
+  // Strip lyrics from a song for list responses, adding a short preview
+  function toSummary(song) {
+    const { lyrics, ...meta } = song;
+    const firstVerse = lyrics?.[1] ?? lyrics?.[0];
+    const lines = (firstVerse?.lines || []).filter(l => l.trim());
+    const lyricsPreview = lines.slice(0, 2).join(' / ') || null;
+    return { ...meta, lyricsPreview };
   }
 
   // Build a flat lyrics string for a song (for search matching)
