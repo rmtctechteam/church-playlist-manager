@@ -72,15 +72,21 @@ The app is configured for deployment on Railway:
 
 ## TODO
 
-- [ ] Google Drive Sync
-- [ ] Google Doc Creation
 - [x] Database of analytics
 - [x] Userback integration
-- [ ] Google Analytics integration
-- [ ] Song suggestions based on Bible lessons and weekly theme
 - [x] Add Song Keys as a related record or information to each song
 - [x] Music section per song — key chip + freeform notes field (parsed from song files, shown in detail panel)
 - [x] Per-song music overrides in playlists — key, tempo, and notes editable per song per service
-- [ ] Create a Sunday song version that is separate from the master song list
 - [x] Song search results - show the first 2 lines in search results along with the song title
 - [x] Mobile responsiveness fixes
+- [x] New Filter - Change Filters names and add This Year, Songs not Sung in the last year
+- [ ] Google Doc Creation
+- [ ] Google Drive Sync
+- [ ] Add a new song feature
+- [ ] Email the attachment
+- [ ] Song suggestions based on Bible lessons and weekly theme
+- [ ] Live song scroller - Karaoke slide mode
+- [ ] Edit a song feature
+- [ ] Google Analytics integration
+- [ ] Propresenter Import - Create a Sunday song version that is separate from the master song list
+- [ ] Overlay Song Chords via association

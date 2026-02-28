@@ -48,7 +48,7 @@ function navigateToSection(section) {
   });
   songsTab.classList.toggle('hidden', section !== 'songs');
   playlistsTab.classList.toggle('hidden', section !== 'playlists');
-  if (section === 'playlists') loadPlaylistList();
+  if (section === 'playlists') showPlaylistListView();
   if (section === 'songs') {
     fetchSongs().then(songs => { allSongs = songs; renderSongList(allSongs); });
   }
@@ -79,7 +79,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     const target = tab.dataset.tab;
     songsTab.classList.toggle('hidden', target !== 'songs');
     playlistsTab.classList.toggle('hidden', target !== 'playlists');
-    if (target === 'playlists') loadPlaylistList();
+    if (target === 'playlists') showPlaylistListView();
     if (target === 'songs' && allSongs.length === 0) fetchSongs().then(songs => { allSongs = songs; renderSongList(allSongs); });
   });
 });
@@ -397,7 +397,7 @@ function renderPlaylistList(playlists) {
 }
 
 function playlistCardHtml(playlist, isPast) {
-  const songCount = playlist.sections.reduce((sum, s) => sum + s.songIds.length, 0);
+  const songCount = playlist.sections.reduce((sum, s) => sum + (s.songIds || s.songs || []).length, 0);
   return `
     <div class="playlist-card ${isPast ? 'past' : ''}" data-id="${escapeHtml(playlist.id)}">
       <div class="playlist-card-top">
