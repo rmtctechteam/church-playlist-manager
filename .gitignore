@@ -1,5 +1,4 @@
 node_modules/
-songs/*
-!songs/.gitkeep
+songs/
 data/
 .claude/settings.local.json
