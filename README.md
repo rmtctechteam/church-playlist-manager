@@ -10,6 +10,9 @@ A web application for managing worship service playlists, song libraries, and se
 - **Lectionary Lookup** — Auto-populate theme and bible lessons from the lectionary calendar
 - **Display View** — Clean, print-friendly playlist display with optional lyrics toggle
 - **Export to .docx** — Download playlists as Word documents with service details and song lyrics
+- **Export to Google Docs** — Export playlists directly to Google Docs
+- **Song Upload** — Upload multiple `.txt` song files at once via the All Songs page
+- **Google OAuth Login** — Restricted to `redeemermtc.org` domain accounts
 - **Usage Tracking** — Track when songs were last used and how frequently
 
 ## Getting Started
@@ -18,11 +21,24 @@ A web application for managing worship service playlists, song libraries, and se
 
 - Node.js 18+
 - Song files as `.txt` files in a `songs/` directory
+- A Google Cloud project with OAuth 2.0 credentials
 
 ### Installation
 
 ```bash
 npm install
+```
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/auth/callback
+SESSION_SECRET=your-session-secret
+GOOGLE_ALLOWED_DOMAIN=yourdomain.org
 ```
 
 ### Running
@@ -62,13 +78,17 @@ The app is configured for deployment on Railway:
 - Reads `PORT` from environment variables
 - Uses file-based storage in `data/` (mount a volume for persistence)
 - Songs directory should also be mounted as a volume
+- Set all environment variables in Railway's **Variables** tab
+- Set `GOOGLE_CALLBACK_URL` to your Railway app's public URL (e.g. `https://your-app.railway.app/auth/callback`)
+- Add the Railway callback URL to your Google OAuth app's **Authorized redirect URIs**
 
 ## Tech Stack
 
 - **Backend:** Node.js, Express
 - **Frontend:** Vanilla HTML, CSS, JavaScript
 - **Storage:** File-based (JSON for playlists/usage, .txt for songs)
-- **Export:** docx package for Word document generation
+- **Auth:** Google OAuth 2.0 (Passport.js), domain-restricted
+- **Export:** docx package for Word documents, Google Docs API for cloud export
 
 ## TODO
 
@@ -81,9 +101,10 @@ The app is configured for deployment on Railway:
 - [x] Mobile responsiveness fixes
 - [x] New Filter - Change Filters names and add This Year, Songs not Sung in the last year
 - [x] Instructions per page and overall
+- [x] Google OAuth login (domain-restricted)
+- [x] Export to Google Docs
+- [x] Add a new song feature (multi-file .txt upload)
 - [ ] Google Drive Sync
-- [ ] Google Doc Creation
-- [ ] Add a new song feature
 - [ ] Song suggestions based on Bible lessons and weekly theme
 - [ ] Live song scroller - Karaoke slide mode
 - [ ] Edit a song feature
