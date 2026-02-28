@@ -111,3 +111,4 @@ The app is configured for deployment on Railway:
 - [ ] Google Analytics integration
 - [ ] Propresenter Import - Create a Sunday song version that is separate from the master song list
 - [ ] Overlay Song Chords via association
+- [ ] swipe UI style to pick songs
