@@ -55,6 +55,7 @@ function navigateToSection(section) {
 }
 
 homeLink.addEventListener('click', showHome);
+document.getElementById('home-nav-btn').addEventListener('click', showHome);
 
 // Bento card handlers
 document.getElementById('bento-create-playlist').addEventListener('click', () => {
@@ -79,6 +80,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     songsTab.classList.toggle('hidden', target !== 'songs');
     playlistsTab.classList.toggle('hidden', target !== 'playlists');
     if (target === 'playlists') loadPlaylistList();
+    if (target === 'songs' && allSongs.length === 0) fetchSongs().then(songs => { allSongs = songs; renderSongList(allSongs); });
   });
 });
 
@@ -546,7 +548,9 @@ function renderPlaylistEditor() {
   }
 
   playlistEditorEl.innerHTML = `
-    <h2>Edit Playlist</h2>
+    <div class="editor-page-header">
+      <span class="editor-page-title">${escapeHtml(p.name)}</span>
+    </div>
     <div class="editor-layout">
       <div class="editor-sidebar">
         <div class="editor-form">
@@ -561,14 +565,6 @@ function renderPlaylistEditor() {
           <div class="form-group">
             <label for="edit-date">Service Date</label>
             <input type="date" id="edit-date" value="${p.date || ''}">
-          </div>
-          <div class="form-group">
-            <label for="edit-theme">Theme</label>
-            <textarea id="edit-theme" rows="3" placeholder="e.g., Grace and Forgiveness">${escapeHtml(p.theme || '')}</textarea>
-          </div>
-          <div class="form-group">
-            <label for="edit-bible-lessons">Bible Lessons</label>
-            <textarea id="edit-bible-lessons" rows="5" placeholder="e.g., Romans 8:28&#10;John 3:16">${escapeHtml((p.bibleLessons || '').replace(/, /g, '\n'))}</textarea>
           </div>
           <div class="form-group">
             <label for="edit-google-doc">Song Sheet Google Doc</label>
@@ -586,8 +582,14 @@ function renderPlaylistEditor() {
             <span><strong>Date:</strong> ${p.date || '<span class="summary-placeholder">Not set</span>'}</span>
             <span><strong>Type:</strong> ${escapeHtml(getServiceTypeName(p.type))}</span>
           </div>
-          <div class="header-summary-row"><strong>Theme:</strong> ${p.theme ? escapeHtml(p.theme) : '<span class="summary-placeholder">Not set</span>'}</div>
-          <div class="header-summary-row"><strong>Lessons:</strong> ${p.bibleLessons ? escapeHtml(p.bibleLessons) : '<span class="summary-placeholder">Not set</span>'}</div>
+          <div class="header-summary-row">
+            <label class="summary-label" for="edit-theme"><strong>Theme</strong></label>
+            <textarea id="edit-theme" class="summary-textarea" rows="2" placeholder="e.g., Grace and Forgiveness">${escapeHtml(p.theme || '')}</textarea>
+          </div>
+          <div class="header-summary-row">
+            <label class="summary-label" for="edit-bible-lessons"><strong>Lessons</strong></label>
+            <textarea id="edit-bible-lessons" class="summary-textarea" rows="3" placeholder="e.g., Romans 8:28&#10;John 3:16">${escapeHtml((p.bibleLessons || '').replace(/, /g, '\n'))}</textarea>
+          </div>
         </div>
         <div class="editor-lookup-action">
           <button class="btn btn-secondary" id="lookup-lectionary-btn">Lookup Theme & Lessons</button>

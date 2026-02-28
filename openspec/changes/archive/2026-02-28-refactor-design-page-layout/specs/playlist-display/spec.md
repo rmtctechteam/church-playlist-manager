@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Render playlist display view
 The system SHALL provide a read-only display view for a playlist that shows the playlist name, service type, date, and songs organized by section with each song's title, effective key, tempo, and notes. The playlist editor header section SHALL use Apple Design System styling with a Home navigation icon, and the Theme and Bible Lessons fields SHALL be editable directly in the summary panel (not the sidebar).
@@ -54,44 +54,8 @@ The playlist editor page header SHALL include a Home icon button that returns th
 
 #### Scenario: Home icon is present in editor header
 - **WHEN** the user opens the playlist editor
-- **THEN** the page header SHALL display a Home icon button positioned at the leading edge of the header
+- **THEN** the page header SHALL display a Home icon button (e.g., ⌂) positioned at the leading edge of the header
 
 #### Scenario: Home icon navigates to home page
 - **WHEN** the user clicks the Home icon button in the playlist editor header
 - **THEN** the application SHALL navigate to the home page view, hiding the playlist editor
-
-### Requirement: Include song lyrics in display view
-The system SHALL optionally include song lyrics in the display view, toggled by a control in the UI.
-
-#### Scenario: Toggle lyrics on
-- **WHEN** the user enables the "Show Lyrics" toggle in the display view
-- **THEN** each song's full lyrics are displayed below its title and key
-
-#### Scenario: Toggle lyrics off
-- **WHEN** the user disables the "Show Lyrics" toggle in the display view
-- **THEN** only song titles and keys are shown (no lyrics)
-
-### Requirement: Print-friendly output
-The system SHALL provide print-friendly styling so the display view can be printed or used for projection. Navigation, buttons, and non-essential UI elements SHALL be hidden when printing.
-
-#### Scenario: Print the playlist
-- **WHEN** the user prints the page while the display view is active
-- **THEN** the printed output contains only the playlist name, date, and song list (with or without lyrics based on toggle state), with no navigation or buttons visible
-
-### Requirement: Display playlist notes
-The system SHALL show the playlist's notes in the display view if notes are present.
-
-#### Scenario: Display view with notes
-- **WHEN** the display view is rendered for a playlist that has notes
-- **THEN** the notes are displayed below the playlist header and above the song list
-
-#### Scenario: Display view without notes
-- **WHEN** the display view is rendered for a playlist that has no notes
-- **THEN** no notes section is shown
-
-### Requirement: Navigate to display from playlist list
-The frontend SHALL provide a way to open the display view directly from the playlist list without entering the editor.
-
-#### Scenario: Open display from playlist list
-- **WHEN** the user clicks a "Display" action on a playlist in the playlist list
-- **THEN** the display view opens for that playlist
