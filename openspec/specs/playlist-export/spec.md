@@ -1,5 +1,5 @@
-### Requirement: Export playlist as .docx document
-The system SHALL provide an API endpoint `GET /api/playlists/:id/export` that generates and returns a `.docx` Word document containing the playlist content.
+### Requirement: Export playlist to document
+The system SHALL provide two export options: download as a Word (.docx) file and create a Google Doc in the signed-in user's Drive. Both options SHALL produce equivalent content. The Word export is available via `GET /api/playlists/:id/export`; the Google Doc export is available via `POST /api/playlists/:id/google-doc`.
 
 #### Scenario: Successful export of a playlist
 - **WHEN** a GET request is made to `/api/playlists/:id/export` with a valid playlist ID
@@ -46,8 +46,12 @@ The exported document SHALL include visual separation between songs using a ligh
 - **THEN** a separator SHALL appear after each song's lyrics before the next heading
 
 ### Requirement: Export Doc button in playlist editor
-The playlist editor UI SHALL include an "Export Doc" button that triggers a download of the exported document.
+The playlist editor UI SHALL include an "Export Doc" button that triggers a download of the exported document, and a "Create Google Doc" button that creates a Google Doc in the user's Drive.
 
 #### Scenario: User clicks Export Doc
 - **WHEN** the user clicks the "Export Doc" button in the playlist editor
 - **THEN** the browser SHALL download the `.docx` file for the current playlist
+
+#### Scenario: User clicks Create Google Doc
+- **WHEN** the user clicks the "Create Google Doc" button in the playlist editor
+- **THEN** a Google Doc is created in the user's Drive and the URL is shown as a link in the UI
