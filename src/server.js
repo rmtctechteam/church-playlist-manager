@@ -22,7 +22,7 @@ const songsMap = new Map(songs.map(s => [s.id, s]));
 analyticsDb.initialize(songsMap);
 
 // API routes
-app.use('/api/songs', createSongsRouter(songs));
+app.use('/api/songs', createSongsRouter(songs, SONGS_DIR));
 app.use('/api', createPlaylistsRouter(songs));
 app.use('/api/lectionary', createLectionaryRouter());
 

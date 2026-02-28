@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Split-panel master-detail layout
 The All Songs page SHALL use a two-panel layout with the song list on the left and a detail panel on the right. Selecting a song in the list SHALL populate the detail panel without navigating away from the list. An "Upload Song" button SHALL appear at the bottom of the song list panel for adding new songs from the browser.

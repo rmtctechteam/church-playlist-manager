@@ -261,6 +261,45 @@ songSort.addEventListener('change', async () => {
   renderSongList(searchInput.value.trim() ? await fetchSongs(searchInput.value.trim()) : allSongs);
 });
 
+// === Song Upload ===
+document.getElementById('upload-song-btn').addEventListener('click', () => {
+  document.getElementById('song-upload-input').click();
+});
+
+document.getElementById('song-upload-input').addEventListener('change', async (e) => {
+  const files = e.target.files;
+  if (!files || files.length === 0) return;
+
+  const formData = new FormData();
+  for (const file of files) formData.append('songs', file);
+
+  let results;
+  try {
+    const res = await fetch('/api/songs/upload', { method: 'POST', body: formData });
+    if (!res.ok) throw new Error(`Server error: ${res.status}`);
+    results = await res.json();
+  } catch (err) {
+    alert(`Upload failed: ${err.message}`);
+    e.target.value = '';
+    return;
+  }
+
+  // Refresh song list
+  allSongs = await fetchSongs();
+  renderSongList(allSongs);
+
+  // Report results
+  const succeeded = results.filter(r => r.success).map(r => r.filename);
+  const failed = results.filter(r => !r.success).map(r => `${r.filename} (${r.error})`);
+  const parts = [];
+  if (succeeded.length) parts.push(`Uploaded: ${succeeded.join(', ')}`);
+  if (failed.length) parts.push(`Failed: ${failed.join(', ')}`);
+  alert(parts.join('\n'));
+
+  // Reset input so same file can be re-selected if needed
+  e.target.value = '';
+});
+
 // === Playlists Tab ===
 
 async function loadServiceTypes() {

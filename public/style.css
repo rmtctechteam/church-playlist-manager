@@ -272,6 +272,12 @@ main:has(#home-view:not(.hidden)) {
   margin-bottom: 1rem;
 }
 
+.songs-upload-area {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--gray-200);
+}
+
 .songs-controls select {
   flex: 1;
   padding: 0.5rem 0.75rem;

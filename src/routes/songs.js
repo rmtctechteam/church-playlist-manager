@@ -1,8 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const analyticsDb = require('../analyticsDb');
+const { parseSongContent } = require('../songParser');
 
-function createSongsRouter(songs) {
+const upload = multer({ storage: multer.memoryStorage() });
+
+function createSongsRouter(songs, songsDir) {
   // Strip lyrics from a song for list responses, adding a short preview
   function toSummary(song) {
     const { lyrics, ...meta } = song;
@@ -93,6 +99,44 @@ function createSongsRouter(songs) {
       return res.status(404).json({ error: 'Song not found' });
     }
     res.json(song);
+  });
+
+  // POST /api/songs/upload — upload one or more .txt song files
+  router.post('/upload', upload.array('songs'), (req, res) => {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files provided' });
+    }
+
+    const results = [];
+
+    for (const file of req.files) {
+      const filename = file.originalname;
+      const id = path.basename(filename, '.txt');
+      const destPath = path.join(songsDir, filename);
+
+      // 409 if file already exists
+      if (fs.existsSync(destPath)) {
+        results.push({ filename, success: false, error: 'File already exists' });
+        continue;
+      }
+
+      // Validate by parsing
+      let song;
+      try {
+        const content = file.buffer.toString('utf8');
+        song = parseSongContent(id, content);
+      } catch (err) {
+        results.push({ filename, success: false, error: `Parse error: ${err.message}` });
+        continue;
+      }
+
+      // Write to disk and add to in-memory array
+      fs.writeFileSync(destPath, file.buffer);
+      songs.push(song);
+      results.push({ filename, success: true, song: toSummary(song) });
+    }
+
+    res.json(results);
   });
 
   return router;
