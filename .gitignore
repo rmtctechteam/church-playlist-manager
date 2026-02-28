@@ -1,5 +1,4 @@
 node_modules/
 songs/
-!songs/Amazing Grace - Traditional.txt
 data/
 .claude/settings.local.json
