@@ -80,10 +80,10 @@ The app is configured for deployment on Railway:
 - [x] Song search results - show the first 2 lines in search results along with the song title
 - [x] Mobile responsiveness fixes
 - [x] New Filter - Change Filters names and add This Year, Songs not Sung in the last year
-- [ ] Google Doc Creation
+- [x] Instructions per page and overall
 - [ ] Google Drive Sync
+- [ ] Google Doc Creation
 - [ ] Add a new song feature
-- [ ] Email the attachment
 - [ ] Song suggestions based on Bible lessons and weekly theme
 - [ ] Live song scroller - Karaoke slide mode
 - [ ] Edit a song feature

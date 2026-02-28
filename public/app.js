@@ -648,6 +648,7 @@ function renderPlaylistEditor() {
       <button class="btn btn-danger" id="delete-playlist-btn">Delete Playlist</button>
       <div class="editor-bottom-actions-right">
         <button class="btn btn-secondary" id="export-doc-btn">Export Doc</button>
+        <button class="btn btn-secondary" id="create-google-doc-btn">Create Google Doc</button>
         <button class="btn btn-secondary" id="display-from-editor-btn">Display Songs</button>
         <button class="btn btn-primary" id="save-playlist-btn">Save</button>
       </div>
@@ -669,6 +670,43 @@ function renderPlaylistEditor() {
   document.getElementById('display-from-editor-btn').addEventListener('click', () => openPlaylistDisplay(currentPlaylist.id));
   document.getElementById('export-doc-btn').addEventListener('click', () => {
     window.location.href = `/api/playlists/${encodeURIComponent(currentPlaylist.id)}/export`;
+  });
+
+  document.getElementById('create-google-doc-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('create-google-doc-btn');
+    btn.disabled = true;
+    btn.textContent = 'Creating...';
+    try {
+      const res = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}/google-doc`, {
+        method: 'POST',
+      });
+      if (res.status === 401) {
+        window.location.href = '/auth/login?returnTo=/';
+        return;
+      }
+      if (!res.ok) {
+        const ct = res.headers.get('content-type') || '';
+        if (ct.includes('application/json')) {
+          const err = await res.json();
+          alert(err.error || 'Failed to create Google Doc');
+        } else {
+          alert(`Failed to create Google Doc (HTTP ${res.status})`);
+        }
+        return;
+      }
+      const { docUrl } = await res.json();
+      // Refresh playlist data so googleDoc URL is reflected
+      const res2 = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
+      if (res2.ok) currentPlaylist = await res2.json();
+      renderPlaylistEditor();
+      // Open the doc
+      window.open(docUrl, '_blank', 'noopener');
+    } catch (err) {
+      alert('Failed to create Google Doc: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Create Google Doc';
+    }
   });
 
   document.getElementById('lookup-lectionary-btn').addEventListener('click', async () => {
@@ -976,6 +1014,35 @@ function renderPlaylistDisplay(playlist) {
   });
 }
 
+// === Auth / User Info ===
+async function initUserInfo() {
+  try {
+    const res = await fetch('/auth/me');
+    if (!res.ok) return; // not signed in — show nothing
+    const user = await res.json();
+    const userInfoEl = document.getElementById('user-info');
+    if (userInfoEl) {
+      userInfoEl.innerHTML =
+        (user.picture ? `<img src="${escapeHtml(user.picture)}" alt="" class="user-avatar" referrerpolicy="no-referrer">` : '') +
+        `<span class="user-name">${escapeHtml(user.name || user.email)}</span>` +
+        `<a href="/auth/logout" class="btn btn-sm btn-secondary sign-out-btn">Sign out</a>`;
+    }
+  } catch (_) {
+    // silently ignore network errors
+  }
+}
+
+// Redirect to login on any 401 API response
+async function apiFetch(url, options) {
+  const res = await fetch(url, options);
+  if (res.status === 401) {
+    window.location.href = '/login.html';
+    return null;
+  }
+  return res;
+}
+
 // === Init ===
+initUserInfo();
 loadServiceTypes();
 showHome();

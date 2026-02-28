@@ -248,6 +248,12 @@ main:has(#home-view:not(.hidden)) {
 }
 
 /* Songs split-panel layout */
+.songs-page-note {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  margin-bottom: 1rem;
+}
+
 .songs-split-panel {
   display: grid;
   grid-template-columns: 350px 1fr;
@@ -1449,4 +1455,96 @@ main:has(#home-view:not(.hidden)) {
   .display-section-name {
     border-bottom-color: #ccc;
   }
+}
+
+/* === Login Page === */
+body.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--gray-50);
+}
+
+.login-container {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  padding: 2.5rem 2rem;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+}
+
+.login-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 0.25rem;
+}
+
+.login-subtitle {
+  color: var(--gray-500);
+  font-size: 0.9rem;
+  margin-bottom: 1.75rem;
+}
+
+.login-error {
+  background: var(--red-50);
+  color: var(--red-600);
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.btn-sign-in {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  padding: 0.65rem 1.25rem;
+}
+
+/* === User Info (Header) === */
+header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+header h1 {
+  flex: 1;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  color: var(--gray-700);
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-name {
+  font-weight: 500;
+}
+
+.btn-sm {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.sign-out-btn {
+  white-space: nowrap;
 }
