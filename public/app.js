@@ -241,6 +241,13 @@ songFilter.addEventListener('change', async () => {
   const val = songFilter.value;
   if (val === 'all') {
     filteredSongIds = null;
+  } else if (val === 'not-90') {
+    const since = new Date();
+    since.setDate(since.getDate() - 90);
+    const dateStr = since.toISOString().split('T')[0];
+    const res = await fetch(`/api/songs/used?since=${dateStr}`);
+    const usedIds = new Set(await res.json());
+    filteredSongIds = allSongs.map(s => s.id).filter(id => !usedIds.has(id));
   } else {
     await ensureUsageSummary();
     const days = parseInt(val);
