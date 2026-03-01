@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: SQLite schema version tracked via PRAGMA user_version
-The analytics database SHALL use `PRAGMA user_version` to track the current schema version. `user_version` SHALL be incremented after each migration block is applied. No separate schema version table is needed for DDL versioning.
+The analytics database SHALL use `PRAGMA user_version` to track the current schema version. `user_version` SHALL be incremented after each migration block is applied. No separate schema version table is needed for DDL versioning. The database file SHALL be stored at `<VOLUME_PATH>/analytics/analytics.db`.
 
 #### Scenario: Fresh database created
 - **WHEN** `analytics.db` does not exist
@@ -14,6 +14,10 @@ The analytics database SHALL use `PRAGMA user_version` to track the current sche
 #### Scenario: Database already at current version
 - **WHEN** `PRAGMA user_version` equals the number of migrations
 - **THEN** no migration blocks are applied and the database is unchanged
+
+#### Scenario: Analytics directory resolved from VOLUME_PATH
+- **WHEN** `VOLUME_PATH` is set to `/app/volume`
+- **THEN** `analytics.db` is opened at `/app/volume/analytics/analytics.db`
 
 ### Requirement: Migrations defined as a sequential MIGRATIONS array
 All DDL migrations SHALL be defined in a `const MIGRATIONS` array in `src/analyticsDb.js`. Each entry SHALL be a SQL string applied as a single `db.exec()` call. Entries SHALL NOT be removed or reordered once deployed.
