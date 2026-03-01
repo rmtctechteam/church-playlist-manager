@@ -112,12 +112,12 @@ mkdir -p /app/volume/songs /app/volume/config /app/volume/analytics
 - [x] Google OAuth login (domain-restricted)
 - [x] Export to Google Docs
 - [x] Add a new song feature (multi-file .txt upload)
-- [ ] Google Drive Sync
+- [x] confirm deployment and database playlist storage
 - [ ] Song suggestions based on Bible lessons and weekly theme
+- [ ] swipe UI style to pick songs
 - [ ] Live song scroller - Karaoke slide mode
+- [ ] Google Drive Sync
 - [ ] Edit a song feature
 - [ ] Google Analytics integration
 - [ ] Propresenter Import - Create a Sunday song version that is separate from the master song list
 - [ ] Overlay Song Chords via association
-- [ ] swipe UI style to pick songs
-- [ ] confirm deployment and database playlist storage
