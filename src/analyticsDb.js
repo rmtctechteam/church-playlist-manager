@@ -9,15 +9,9 @@ const PLAYLISTS_FILE = path.join(DATA_DIR, 'playlists.json');
 
 let db;
 
-function open() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  db = new Database(DB_PATH);
-  db.pragma('journal_mode = WAL');
-}
-
-function runDDL() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS song_usage (
+const MIGRATIONS = [
+  // v1 — initial schema
+  `CREATE TABLE IF NOT EXISTS song_usage (
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
       song_id       TEXT NOT NULL,
       playlist_id   TEXT NOT NULL,
@@ -30,16 +24,29 @@ function runDDL() {
       song_tempo    TEXT,
       created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
     );
-
     CREATE INDEX IF NOT EXISTS idx_song_usage_song_id     ON song_usage(song_id);
     CREATE INDEX IF NOT EXISTS idx_song_usage_playlist_id ON song_usage(playlist_id);
     CREATE INDEX IF NOT EXISTS idx_song_usage_date        ON song_usage(date);
-
     CREATE TABLE IF NOT EXISTS _migration (
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
-    );
-  `);
+    );`,
+  // Future migrations: add new entries here, e.g.:
+  // v2 — `ALTER TABLE song_usage ADD COLUMN new_col TEXT;`
+];
+
+function open() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  db = new Database(DB_PATH);
+  db.pragma('journal_mode = WAL');
+}
+
+function runMigrations() {
+  const current = db.pragma('user_version', { simple: true });
+  for (let i = current; i < MIGRATIONS.length; i++) {
+    db.exec(MIGRATIONS[i]);
+    db.pragma(`user_version = ${i + 1}`);
+  }
 }
 
 // Called from server.js after songs are loaded — runs one-time migration
@@ -253,7 +260,7 @@ function _resetForTesting() {
 
 // Initialize DB on require
 open();
-runDDL();
+runMigrations();
 
 module.exports = {
   initialize,

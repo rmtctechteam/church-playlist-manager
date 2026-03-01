@@ -6,12 +6,8 @@ context: |
   Songs stored as .txt files in songs/ directory
   Playlists and usage data stored in data/ directory
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  design:
+    - If the change modifies the playlist data model (adds, removes, or renames fields on playlists or playlist songs), document the migration strategy — show the old shape vs new shape and specify the version bump.
+  tasks:
+    - If the change modifies the playlist data model (adds, removes, or renames fields on playlists or playlist songs), include a task to update the migrate(data) function in src/playlistStore.js with a new version block.

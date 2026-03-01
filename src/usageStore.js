@@ -4,20 +4,52 @@ const path = require('path');
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const USAGE_FILE = path.join(DATA_DIR, 'usage.json');
 
+const CURRENT_VERSION = 1;
+
+function migrate(data) {
+  // Handle legacy bare array (version 0)
+  if (Array.isArray(data)) {
+    data = { version: 0, records: data };
+  }
+
+  let { version, records } = data;
+
+  if (version < 1) {
+    // Version 1: adopt versioned envelope — no record-level changes needed
+    version = 1;
+  }
+
+  // Future: if (version < 2) { ... version = 2; }
+
+  return { version, records };
+}
+
 function load() {
+  let raw;
   try {
-    const data = fs.readFileSync(USAGE_FILE, 'utf-8');
-    return JSON.parse(data);
+    raw = JSON.parse(fs.readFileSync(USAGE_FILE, 'utf-8'));
   } catch (err) {
     if (err.code === 'ENOENT') return [];
     throw err;
   }
+
+  const before = Array.isArray(raw) ? 0 : raw.version;
+  const migrated = migrate(raw);
+
+  if (migrated.version !== before) {
+    const tmp = USAGE_FILE + '.tmp';
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(tmp, JSON.stringify(migrated, null, 2));
+    fs.renameSync(tmp, USAGE_FILE);
+  }
+
+  return migrated.records;
 }
 
 function save(records) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
   const tmp = USAGE_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(records, null, 2));
+  fs.writeFileSync(tmp, JSON.stringify({ version: CURRENT_VERSION, records }, null, 2));
   fs.renameSync(tmp, USAGE_FILE);
 }
 
