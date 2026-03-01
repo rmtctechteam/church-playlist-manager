@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+const VOLUME_PATH = process.env.VOLUME_PATH || path.join(__dirname, '..', 'volume');
+const DATA_DIR = path.join(VOLUME_PATH, 'config');
 const USAGE_FILE = path.join(DATA_DIR, 'usage.json');
 
 const CURRENT_VERSION = 1;

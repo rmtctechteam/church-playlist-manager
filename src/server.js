@@ -12,7 +12,8 @@ const analyticsDb = require('./analyticsDb');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SONGS_DIR = path.join(__dirname, '..', 'songs');
+const VOLUME_PATH = process.env.VOLUME_PATH || path.join(__dirname, '..', 'volume');
+const SONGS_DIR = path.join(VOLUME_PATH, 'songs');
 
 // Parse JSON request bodies
 app.use(express.json());

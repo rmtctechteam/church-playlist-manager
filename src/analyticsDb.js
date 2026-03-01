@@ -2,10 +2,12 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const DB_PATH = process.env.ANALYTICS_DB_PATH || path.join(DATA_DIR, 'analytics.db');
-const USAGE_FILE = path.join(DATA_DIR, 'usage.json');
-const PLAYLISTS_FILE = path.join(DATA_DIR, 'playlists.json');
+const VOLUME_PATH = process.env.VOLUME_PATH || path.join(__dirname, '..', 'volume');
+const ANALYTICS_DIR = path.join(VOLUME_PATH, 'analytics');
+const CONFIG_DIR = path.join(VOLUME_PATH, 'config');
+const DB_PATH = process.env.ANALYTICS_DB_PATH || path.join(ANALYTICS_DIR, 'analytics.db');
+const USAGE_FILE = path.join(CONFIG_DIR, 'usage.json');
+const PLAYLISTS_FILE = path.join(CONFIG_DIR, 'playlists.json');
 
 let db;
 
@@ -36,7 +38,7 @@ const MIGRATIONS = [
 ];
 
 function open() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.mkdirSync(ANALYTICS_DIR, { recursive: true });
   db = new Database(DB_PATH);
   db.pragma('journal_mode = WAL');
 }

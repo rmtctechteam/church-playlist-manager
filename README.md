@@ -20,7 +20,7 @@ A web application for managing worship service playlists, song libraries, and se
 ### Prerequisites
 
 - Node.js 18+
-- Song files as `.txt` files in a `songs/` directory
+- Song files as `.txt` files in `volume/songs/`
 - A Google Cloud project with OAuth 2.0 credentials
 
 ### Installation
@@ -39,6 +39,7 @@ GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_CALLBACK_URL=http://localhost:3000/auth/callback
 SESSION_SECRET=your-session-secret
 GOOGLE_ALLOWED_DOMAIN=yourdomain.org
+# VOLUME_PATH=./volume  # optional — defaults to ./volume
 ```
 
 ### Running
@@ -57,7 +58,7 @@ npm test
 
 ## Song File Format
 
-Songs are stored as `.txt` files in the `songs/` directory with this format:
+Songs are stored as `.txt` files in `volume/songs/` with this format:
 
 ```
 Title: Amazing Grace
@@ -76,11 +77,18 @@ Was blind but now I see
 The app is configured for deployment on Railway:
 
 - Reads `PORT` from environment variables
-- Uses file-based storage in `data/` (mount a volume for persistence)
-- Songs directory should also be mounted as a volume
-- Set all environment variables in Railway's **Variables** tab
+- All persistent storage lives under a single volume mounted at `/app/volume`
+- Set `VOLUME_PATH=/app/volume` in Railway's **Variables** tab
+- Mount one Railway volume at `/app/volume` — this covers songs, playlists, and analytics
 - Set `GOOGLE_CALLBACK_URL` to your Railway app's public URL (e.g. `https://your-app.railway.app/auth/callback`)
 - Add the Railway callback URL to your Google OAuth app's **Authorized redirect URIs**
+
+**First-time Railway volume setup:**
+```bash
+# In Railway shell, copy data into the new volume layout
+mkdir -p /app/volume/songs /app/volume/config /app/volume/analytics
+# Then upload your song files and data files into these directories
+```
 
 ## Tech Stack
 

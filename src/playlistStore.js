@@ -2,7 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const DATA_DIR = path.join(__dirname, '..', 'data');
+const VOLUME_PATH = process.env.VOLUME_PATH || path.join(__dirname, '..', 'volume');
+const DATA_DIR = path.join(VOLUME_PATH, 'config');
 const PLAYLISTS_FILE = path.join(DATA_DIR, 'playlists.json');
 
 const CURRENT_VERSION = 1;

@@ -1,4 +1,11 @@
 node_modules/
 songs/
 data/
+volume/*
+!volume/songs/
+!volume/songs/.gitkeep
+!volume/config/
+!volume/config/.gitkeep
+!volume/analytics/
+!volume/analytics/.gitkeep
 .claude/settings.local.json
