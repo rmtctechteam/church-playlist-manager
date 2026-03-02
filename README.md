@@ -121,3 +121,4 @@ mkdir -p /app/volume/songs /app/volume/config /app/volume/analytics
 - [ ] Google Analytics integration
 - [ ] Propresenter Import - Create a Sunday song version that is separate from the master song list
 - [ ] Overlay Song Chords via association
+- [ ] Track Master Song Edits
