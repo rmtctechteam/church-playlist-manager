@@ -10,10 +10,12 @@ const { createGoogleDocsRouter } = require('./routes/googleDocs');
 const { router: authRouter } = require('./auth');
 const analyticsDb = require('./analyticsDb');
 
+const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const VOLUME_PATH = process.env.VOLUME_PATH || path.join(__dirname, '..', 'volume');
 const SONGS_DIR = path.join(VOLUME_PATH, 'songs');
+fs.mkdirSync(SONGS_DIR, { recursive: true });
 
 // Parse JSON request bodies
 app.use(express.json());
