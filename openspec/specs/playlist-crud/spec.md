@@ -8,7 +8,7 @@ The system SHALL provide an endpoint that returns all preset worship service typ
 - **THEN** the system returns a 200 response with an array of service types, each containing an `id`, `name`, and `sections` array (e.g., `{ "id": "holy-communion", "name": "Holy Communion", "sections": ["Gathering", "Word", "Communion", "Sending"] }`)
 
 ### Requirement: Create a playlist
-The system SHALL allow creating a new playlist with a name and a service type. The system SHALL generate a unique ID, initialize the `sections` array from the selected service type's template (each section with an empty `songIds` array), and record `createdAt` and `updatedAt` timestamps.
+The system SHALL allow creating a new playlist with a name and a service type. The system SHALL generate a unique ID, initialize the `sections` array from the selected service type's template (each section with an empty `songIds` array), and record `createdAt` and `updatedAt` timestamps. After creation, the UI SHALL perform a lectionary auto-lookup and then present the user with a "Get Song Suggestions" or "Pick Songs Myself" choice before entering the full editor — unless `ANTHROPIC_API_KEY` is not configured, in which case the suggestion step is skipped and the editor opens directly.
 
 #### Scenario: Create a playlist with a service type
 - **WHEN** a POST request is sent to `/api/playlists` with `{ "name": "Sunday Worship", "type": "holy-communion" }`
@@ -25,6 +25,14 @@ The system SHALL allow creating a new playlist with a name and a service type. T
 #### Scenario: Create a playlist with an invalid type
 - **WHEN** a POST request is sent to `/api/playlists` with a `type` that is not a valid service type ID and is not `"custom"`
 - **THEN** the system returns a 400 response with an error message indicating the type is invalid
+
+#### Scenario: Post-creation flow with suggestions available
+- **WHEN** a new playlist is successfully created and `ANTHROPIC_API_KEY` is configured
+- **THEN** the UI SHALL auto-run the lectionary lookup, then display the "Get Song Suggestions / Pick Songs Myself" choice overlay before showing the full editor
+
+#### Scenario: Post-creation flow without suggestions available
+- **WHEN** a new playlist is successfully created and `ANTHROPIC_API_KEY` is not configured
+- **THEN** the UI SHALL auto-run the lectionary lookup and open the full editor directly, with no suggestion step shown
 
 ### Requirement: List all playlists
 The system SHALL return all playlists sorted by date descending (most recent first), with playlists without dates listed last.

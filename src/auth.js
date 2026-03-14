@@ -5,8 +5,6 @@ const SCOPES = [
   'openid',
   'email',
   'profile',
-  'https://www.googleapis.com/auth/documents',
-  'https://www.googleapis.com/auth/drive.file',
 ];
 
 // 2.1 — OAuth2 client from env vars
@@ -16,31 +14,20 @@ const authClient = new google.auth.OAuth2(
   process.env.GOOGLE_CALLBACK_URL
 );
 
-function getAuthUrl() {
-  return authClient.generateAuthUrl({
+function getAuthUrl(loginHint) {
+  const opts = {
     access_type: 'offline',
     scope: SCOPES,
     prompt: 'consent',
-  });
+    hd: process.env.GOOGLE_ALLOWED_DOMAIN,
+  };
+  if (loginHint) opts.login_hint = loginHint;
+  return authClient.generateAuthUrl(opts);
 }
 
 async function getTokensFromCode(code) {
   const { tokens } = await authClient.getToken(code);
   return tokens;
-}
-
-async function refreshAccessToken(session) {
-  const now = Date.now();
-  if (session.expiresAt && now < session.expiresAt - 60000) return;
-  const client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_CALLBACK_URL
-  );
-  client.setCredentials({ refresh_token: session.refreshToken });
-  const { credentials } = await client.refreshAccessToken();
-  session.accessToken = credentials.access_token;
-  session.expiresAt = credentials.expiry_date;
 }
 
 // 2.6 — requireAuth middleware
@@ -68,7 +55,8 @@ router.get('/login', (req, res) => {
   if (returnTo && returnTo.startsWith('/')) {
     req.session.returnTo = returnTo;
   }
-  res.redirect(getAuthUrl());
+  const loginHint = req.session.email; // re-auth: guide user back to the same account
+  res.redirect(getAuthUrl(loginHint));
 });
 
 // GET /auth/callback
@@ -107,9 +95,6 @@ router.get('/callback', async (req, res) => {
     req.session.email = email;
     req.session.name = userInfo.name;
     req.session.picture = userInfo.picture;
-    req.session.accessToken = tokens.access_token;
-    req.session.refreshToken = tokens.refresh_token;
-    req.session.expiresAt = tokens.expiry_date;
 
     const returnTo = req.session.returnTo || '/';
     delete req.session.returnTo;
@@ -139,4 +124,4 @@ router.get('/me', (req, res) => {
   });
 });
 
-module.exports = { authClient, getAuthUrl, getTokensFromCode, refreshAccessToken, router, requireAuth };
+module.exports = { authClient, getAuthUrl, getTokensFromCode, router, requireAuth };

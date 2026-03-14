@@ -17,7 +17,7 @@ describe('serviceTypes', () => {
   it('acts has correct sections', () => {
     const t = getServiceType('acts');
     assert.equal(t.name, 'ACTS');
-    assert.deepEqual(t.sections, ['Adoration', 'Confession', 'Thanksgiving', 'Supplication']);
+    assert.deepEqual(t.sections, ['Opening', 'Adoration', 'Confession', 'Thanksgiving', 'Supplication']);
   });
 
   it('praise-and-worship has correct sections', () => {

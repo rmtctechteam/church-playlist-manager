@@ -7,6 +7,7 @@ const { createSongsRouter } = require('./routes/songs');
 const { createPlaylistsRouter } = require('./routes/playlists');
 const { createLectionaryRouter } = require('./routes/lectionary');
 const { createGoogleDocsRouter } = require('./routes/googleDocs');
+const { createSuggestionsRouter } = require('./routes/suggestions');
 const { router: authRouter } = require('./auth');
 const analyticsDb = require('./analyticsDb');
 
@@ -44,6 +45,7 @@ app.use('/api/songs', createSongsRouter(songs, SONGS_DIR));
 app.use('/api', createPlaylistsRouter(songs));
 app.use('/api/lectionary', createLectionaryRouter());
 app.use('/api', createGoogleDocsRouter(songs));
+app.use('/api', createSuggestionsRouter(songs));
 
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '..', 'public')));

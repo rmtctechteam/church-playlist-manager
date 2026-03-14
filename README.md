@@ -39,7 +39,9 @@ GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_CALLBACK_URL=http://localhost:3000/auth/callback
 SESSION_SECRET=your-session-secret
 GOOGLE_ALLOWED_DOMAIN=yourdomain.org
-# VOLUME_PATH=./volume  # optional — defaults to ./volume
+# VOLUME_PATH=./volume              # optional — defaults to ./volume
+# GOOGLE_SERVICE_ACCOUNT_JSON=...   # optional — enables Create Google Doc feature
+# ANTHROPIC_API_KEY=sk-ant-...      # optional — enables AI song suggestions on new playlists
 ```
 
 ### Running
@@ -115,10 +117,13 @@ mkdir -p /app/volume/songs /app/volume/config /app/volume/analytics
 - [x] confirm deployment and database playlist storage
 - [ ] Song suggestions based on Bible lessons and weekly theme
 - [ ] swipe UI style to pick songs
-- [ ] Live song scroller - Karaoke slide mode
 - [ ] Google Drive Sync
 - [ ] Edit a song feature
-- [ ] Google Analytics integration
+- [ ] Add Youtube references
 - [ ] Propresenter Import - Create a Sunday song version that is separate from the master song list
 - [ ] Overlay Song Chords via association
 - [ ] Track Master Song Edits
+- [ ] Compare the current song lyrics with a master lyric from a website - lyrics diff
+- [ ] Live song scroller - Karaoke slide mode
+- [ ] Google Analytics integration
+- [ ] Support import of Propresenter Files

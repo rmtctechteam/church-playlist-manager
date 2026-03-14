@@ -7,7 +7,7 @@ const SERVICE_TYPES = {
   'acts': {
     id: 'acts',
     name: 'ACTS',
-    sections: ['Adoration', 'Confession', 'Thanksgiving', 'Supplication'],
+    sections: ['Opening', 'Adoration', 'Confession', 'Thanksgiving', 'Supplication'],
   },
   'praise-and-worship': {
     id: 'praise-and-worship',

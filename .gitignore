@@ -9,3 +9,6 @@ volume/*
 !volume/analytics/
 !volume/analytics/.gitkeep
 .claude/settings.local.json
+scripts/.import-tokens.json
+scripts/import-output.json
+scripts/import-summary.csv

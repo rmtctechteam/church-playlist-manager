@@ -1,7 +1,19 @@
 const express = require('express');
 const { google } = require('googleapis');
 const playlistStore = require('../playlistStore');
-const { refreshAccessToken } = require('../auth');
+
+function getServiceAccountAuth() {
+  const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!keyJson) throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON env var not set');
+  const credentials = JSON.parse(keyJson);
+  return new google.auth.GoogleAuth({
+    credentials,
+    scopes: [
+      'https://www.googleapis.com/auth/documents',
+      'https://www.googleapis.com/auth/drive',
+    ],
+  });
+}
 
 function createGoogleDocsRouter(songs) {
   const router = express.Router();
@@ -126,16 +138,12 @@ function createGoogleDocsRouter(songs) {
       return res.status(404).json({ error: 'Playlist not found' });
     }
 
-    const session = req.session;
-    if (!session || !session.accessToken) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
-
+    let auth;
     try {
-      await refreshAccessToken(session);
+      auth = getServiceAccountAuth();
     } catch (err) {
-      console.error('Token refresh error:', err);
-      return res.status(401).json({ error: 'Failed to refresh auth token. Please sign out and sign in again.' });
+      console.error('Service account config error:', err);
+      return res.status(500).json({ error: 'Google service account not configured. Set GOOGLE_SERVICE_ACCOUNT_JSON.' });
     }
 
     // Build resolved playlist
@@ -147,18 +155,8 @@ function createGoogleDocsRouter(songs) {
       })),
     };
 
-    const authClient = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_CALLBACK_URL
-    );
-    authClient.setCredentials({
-      access_token: session.accessToken,
-      refresh_token: session.refreshToken,
-    });
-
-    const docs = google.docs({ version: 'v1', auth: authClient });
-    const drive = google.drive({ version: 'v3', auth: authClient });
+    const docs = google.docs({ version: 'v1', auth });
+    const drive = google.drive({ version: 'v3', auth });
 
     try {
       // Create blank doc

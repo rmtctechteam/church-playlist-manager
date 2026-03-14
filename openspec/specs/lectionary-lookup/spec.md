@@ -44,6 +44,12 @@ The playlist editor SHALL include a "Lookup" button that fetches lectionary data
 - **WHEN** the lectionary API returns an error
 - **THEN** the system SHALL show an alert with the error message
 
+#### Scenario: New playlist auto-populates theme and lessons
+- **WHEN** a new playlist is created and the editor opens for the first time
+- **THEN** the system SHALL automatically run the lectionary lookup using the service date provided during creation
+- **AND** populate the Theme and Bible Lessons fields if data is found
+- **AND** suppress error alerts (silent mode) so the user is not interrupted if the lookup fails
+
 ### Requirement: Lectionary fetch error handling
 The system SHALL handle network errors and unexpected HTML gracefully when fetching the lectionary page.
 

@@ -23,12 +23,24 @@ const tabBar = document.querySelector('.tab-bar');
 
 let debounceTimer = null;
 let serviceTypes = [];
+let songSuggestionsEnabled = false;
+
+const featuresReady = fetch('/api/config/features')
+  .then(r => r.json())
+  .then(f => { songSuggestionsEnabled = !!f.songSuggestions; })
+  .catch(() => {});
 
 // === Utility ===
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+function formatDisplayDate(dateStr) {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 // === Home / Navigation ===
@@ -526,11 +538,14 @@ async function createPlaylist() {
   }
 
   const playlist = await res.json();
-  openPlaylistEditor(playlist.id);
+  openPlaylistEditor(playlist.id, { autoLookup: true, autoSuggest: true });
 }
 
-async function openPlaylistEditor(id) {
-  const res = await fetch(`/api/playlists/${encodeURIComponent(id)}`);
+async function openPlaylistEditor(id, { autoLookup = false, autoSuggest = false } = {}) {
+  const [res] = await Promise.all([
+    fetch(`/api/playlists/${encodeURIComponent(id)}`),
+    featuresReady,
+  ]);
   if (!res.ok) return;
   currentPlaylist = await res.json();
 
@@ -538,10 +553,10 @@ async function openPlaylistEditor(id) {
   playlistDisplayView.classList.add('hidden');
   playlistEditorView.classList.remove('hidden');
 
-  renderPlaylistEditor();
+  renderPlaylistEditor({ autoLookup, autoSuggest });
 }
 
-function renderPlaylistEditor() {
+function renderPlaylistEditor({ autoLookup = false, autoSuggest = false } = {}) {
   const p = currentPlaylist;
 
   let sectionsHtml = '';
@@ -649,6 +664,7 @@ function renderPlaylistEditor() {
       <div class="editor-bottom-actions-right">
         <button class="btn btn-secondary" id="export-doc-btn">Export Doc</button>
         <button class="btn btn-secondary" id="create-google-doc-btn">Create Google Doc</button>
+        ${songSuggestionsEnabled ? '<button class="btn btn-secondary" id="suggest-songs-btn">Suggest Songs</button>' : ''}
         <button class="btn btn-secondary" id="display-from-editor-btn">Display Songs</button>
         <button class="btn btn-primary" id="save-playlist-btn">Save</button>
       </div>
@@ -671,6 +687,10 @@ function renderPlaylistEditor() {
   document.getElementById('export-doc-btn').addEventListener('click', () => {
     window.location.href = `/api/playlists/${encodeURIComponent(currentPlaylist.id)}/export`;
   });
+
+  if (songSuggestionsEnabled) {
+    document.getElementById('suggest-songs-btn').addEventListener('click', () => fetchAndShowSuggestions());
+  }
 
   document.getElementById('create-google-doc-btn').addEventListener('click', async () => {
     const btn = document.getElementById('create-google-doc-btn');
@@ -709,10 +729,10 @@ function renderPlaylistEditor() {
     }
   });
 
-  document.getElementById('lookup-lectionary-btn').addEventListener('click', async () => {
+  async function runLectionaryLookup({ silent = false } = {}) {
     const date = document.getElementById('edit-date').value;
     if (!date) {
-      alert('Please set a service date first.');
+      if (!silent) alert('Please set a service date first.');
       return;
     }
     const btn = document.getElementById('lookup-lectionary-btn');
@@ -721,20 +741,30 @@ function renderPlaylistEditor() {
     try {
       const res = await fetch(`/api/lectionary?date=${encodeURIComponent(date)}`);
       if (!res.ok) {
-        const err = await res.json();
-        alert(err.error || 'Lookup failed');
+        if (!silent) {
+          const err = await res.json();
+          alert(err.error || 'Lookup failed');
+        }
         return;
       }
       const data = await res.json();
       document.getElementById('edit-theme').value = data.theme;
       document.getElementById('edit-bible-lessons').value = data.bibleLessons.split(', ').join('\n');
     } catch (_) {
-      alert('Failed to reach the lectionary service.');
+      if (!silent) alert('Failed to reach the lectionary service.');
     } finally {
       btn.disabled = false;
       btn.textContent = 'Lookup Theme & Lessons';
     }
-  });
+  }
+
+  document.getElementById('lookup-lectionary-btn').addEventListener('click', () => runLectionaryLookup());
+
+  if (autoLookup) {
+    runLectionaryLookup({ silent: true }).then(() => {
+      if (autoSuggest && songSuggestionsEnabled) showSuggestionsChoice();
+    });
+  }
 
   const deleteModal = document.getElementById('delete-modal');
   document.getElementById('delete-playlist-btn').addEventListener('click', () => {
@@ -808,6 +838,152 @@ function renderPlaylistEditor() {
       sectionSongs(si)[songIdx][field] = input.value.trim() || null;
     });
   });
+}
+
+// === Song Suggestions ===
+
+function showSuggestionsChoice() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'suggestions-choice-overlay';
+  overlay.innerHTML = `
+    <div class="modal suggestions-choice-modal">
+      <h3>Song Suggestions</h3>
+      <p>Would you like AI-powered song suggestions based on this service's theme and Bible passages?</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="pick-myself-btn">Pick Songs Myself</button>
+        <button class="btn btn-primary" id="get-suggestions-btn">Get Song Suggestions</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  document.getElementById('pick-myself-btn').addEventListener('click', () => overlay.remove());
+  document.getElementById('get-suggestions-btn').addEventListener('click', async () => {
+    overlay.remove();
+    await fetchAndShowSuggestions();
+  });
+}
+
+async function fetchAndShowSuggestions() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'suggestions-panel-overlay';
+  overlay.innerHTML = `
+    <div class="modal suggestions-panel-modal">
+      <h3>Song Suggestions</h3>
+      <div id="suggestions-content">
+        <div class="suggestions-loading">
+          <div class="suggestions-spinner"></div>
+          <p>Finding songs that fit your service theme…</p>
+        </div>
+      </div>
+      <div class="modal-actions" id="suggestions-actions" style="display:none">
+        <button class="btn btn-primary" id="suggestions-done-btn">Done</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  try {
+    // Read theme/lessons from the form fields — they may not be saved yet (e.g. auto-lookup just ran)
+    const themeField = document.getElementById('edit-theme');
+    const lessonsField = document.getElementById('edit-bible-lessons');
+    const bodyPayload = {};
+    if (themeField && themeField.value.trim()) bodyPayload.theme = themeField.value.trim();
+    if (lessonsField && lessonsField.value.trim()) bodyPayload.bibleLessons = lessonsField.value.trim().split('\n').join(', ');
+
+    const res = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}/suggestions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyPayload),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      document.getElementById('suggestions-content').innerHTML = `
+        <p class="suggestions-error">${escapeHtml(data.error || 'Failed to get suggestions.')}</p>
+      `;
+      document.getElementById('suggestions-actions').style.display = '';
+      document.getElementById('suggestions-done-btn').textContent = 'Close';
+      document.getElementById('suggestions-done-btn').addEventListener('click', () => overlay.remove());
+      return;
+    }
+
+    const { suggestions, theme } = data;
+    const sections = currentPlaylist.sections.map((s, i) => ({ name: s.name, idx: i }));
+
+    const suggestionsHtml = suggestions.map((s, i) => {
+      const sectionOptions = sections.map(sec =>
+        `<option value="${sec.idx}" ${sec.name === s.section ? 'selected' : ''}>${escapeHtml(sec.name)}</option>`
+      ).join('');
+      return `
+        <div class="suggestion-item" id="suggestion-${i}">
+          <div class="suggestion-info">
+            <span class="suggestion-title">${escapeHtml(s.title)}</span>
+            <span class="suggestion-reason">${escapeHtml(s.reason)}</span>
+            <span class="suggestion-last-used">${s.lastUsed ? `Last performed: ${formatDisplayDate(s.lastUsed)}` : 'Never performed'}</span>
+          </div>
+          <div class="suggestion-actions">
+            <select class="suggestion-section-select" data-idx="${i}">${sectionOptions}</select>
+            <button class="btn btn-secondary btn-sm suggestion-add-btn" data-song-id="${escapeHtml(s.songId)}" data-idx="${i}">Add</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    document.getElementById('suggestions-content').innerHTML = `
+      ${theme ? `<div class="suggestions-theme">Theme: ${escapeHtml(theme)}</div>` : ''}
+      <p class="suggestions-intro">Here are songs that fit your service. Select a section and click Add.</p>
+      <div class="suggestions-list">${suggestionsHtml}</div>
+    `;
+    document.getElementById('suggestions-actions').style.display = '';
+    document.getElementById('suggestions-done-btn').addEventListener('click', async () => {
+      overlay.remove();
+      const fresh = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
+      if (fresh.ok) currentPlaylist = await fresh.json();
+      renderPlaylistEditor();
+    });
+
+    document.querySelectorAll('.suggestion-add-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const songId = btn.dataset.songId;
+        const idx = parseInt(btn.dataset.idx);
+        const sectionIdx = parseInt(document.querySelector(`.suggestion-section-select[data-idx="${idx}"]`).value);
+
+        btn.disabled = true;
+        btn.textContent = 'Adding…';
+
+        // Re-fetch current sections to avoid stale state
+        const freshRes = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
+        if (freshRes.ok) currentPlaylist = await freshRes.json();
+
+        sectionSongs(sectionIdx).push({ id: songId, key: null, tempo: null, notes: null });
+
+        const saveRes = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sections: serialiseSections() }),
+        });
+
+        if (saveRes.ok) {
+          currentPlaylist = await saveRes.json();
+          btn.textContent = 'Added ✓';
+          btn.classList.add('suggestion-added');
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Add';
+        }
+      });
+    });
+  } catch (err) {
+    document.getElementById('suggestions-content').innerHTML = `
+      <p class="suggestions-error">Failed to reach the suggestions service. You can pick songs manually.</p>
+    `;
+    document.getElementById('suggestions-actions').style.display = '';
+    document.getElementById('suggestions-done-btn').textContent = 'Close';
+    document.getElementById('suggestions-done-btn').addEventListener('click', () => overlay.remove());
+  }
 }
 
 function sectionSongs(sectionIdx) {
@@ -929,7 +1105,7 @@ function renderPlaylistDisplay(playlist) {
     ? `<div class="display-description"><strong>Bible Lessons:</strong> ${escapeHtml(playlist.bibleLessons)}</div>`
     : '';
   const googleDocHtml = playlist.googleDoc
-    ? `<div class="display-description"><strong>Song Sheet Google Doc:</strong> <a href="${escapeHtml(playlist.googleDoc)}" target="_blank" rel="noopener">${escapeHtml(playlist.googleDoc)}</a></div>`
+    ? `<div class="display-description"><strong>Song Sheet:</strong> <a href="${escapeHtml(playlist.googleDoc)}" target="_blank" rel="noopener">View Google Doc</a></div>`
     : '';
   const notesHtml = playlist.notes
     ? `<div class="display-notes">${escapeHtml(playlist.notes)}</div>`
@@ -981,7 +1157,7 @@ function renderPlaylistDisplay(playlist) {
         <h2>${escapeHtml(playlist.name)}</h2>
         <div class="display-meta">
           <span>${escapeHtml(getServiceTypeName(playlist.type))}</span>
-          ${playlist.date ? `<span>${playlist.date}</span>` : ''}
+          ${playlist.date ? `<span>${formatDisplayDate(playlist.date)}</span>` : ''}
         </div>
       </div>
       ${themeHtml}
