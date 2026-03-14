@@ -69,7 +69,7 @@ The system SHALL return a playlist by ID with each section's songs resolved to f
 - **THEN** the system returns a 404 response with an error message
 
 ### Requirement: Update a playlist
-The system SHALL allow updating a playlist's name, sections (including song assignments and per-song music overrides), date, notes, and `googleDoc` URL. The `googleDoc` field SHALL be populated automatically when a Google Doc is created via the doc creation endpoint, in addition to being settable manually. The system SHALL update the `updatedAt` timestamp on each update.
+The system SHALL allow updating a playlist's name, sections (including song assignments and per-song music overrides), date, notes, and `googleDoc` URL. The `googleDoc` field SHALL be populated automatically when a Google Doc is created via the doc creation endpoint, in addition to being settable manually. The system SHALL update the `updatedAt` timestamp on each update. Song Suggestions SHALL be presented as a swipe card experience, allowing users to add suggested songs directly from the suggestions overlay without requiring a separate save action.
 
 #### Scenario: Update playlist name
 - **WHEN** a PUT request is sent to `/api/playlists/:id` with `{ "name": "New Name" }`
@@ -90,6 +90,10 @@ The system SHALL allow updating a playlist's name, sections (including song assi
 #### Scenario: Update a non-existent playlist
 - **WHEN** a PUT request is sent to `/api/playlists/:id` with an ID that does not exist
 - **THEN** the system returns a 404 response with an error message
+
+#### Scenario: Song suggestions use swipe card UI
+- **WHEN** the user requests song suggestions from the playlist editor
+- **THEN** suggestions SHALL be presented as swipeable cards (not a static list), each saved immediately to the playlist on swipe right
 
 ### Requirement: Delete a playlist
 The system SHALL allow deleting a playlist by ID. Deletion SHALL be permanent and SHALL also remove associated usage records.

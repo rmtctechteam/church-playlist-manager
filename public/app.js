@@ -838,6 +838,7 @@ function renderPlaylistEditor({ autoLookup = false, autoSuggest = false } = {}) 
       sectionSongs(si)[songIdx][field] = input.value.trim() || null;
     });
   });
+
 }
 
 // === Song Suggestions ===
@@ -866,27 +867,23 @@ function showSuggestionsChoice() {
 }
 
 async function fetchAndShowSuggestions() {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.id = 'suggestions-panel-overlay';
-  overlay.innerHTML = `
-    <div class="modal suggestions-panel-modal">
-      <h3>Song Suggestions</h3>
-      <div id="suggestions-content">
-        <div class="suggestions-loading">
-          <div class="suggestions-spinner"></div>
-          <p>Finding songs that fit your service theme…</p>
-        </div>
-      </div>
-      <div class="modal-actions" id="suggestions-actions" style="display:none">
-        <button class="btn btn-primary" id="suggestions-done-btn">Done</button>
-      </div>
+  // Show loading overlay while fetching
+  const loadingOverlay = document.createElement('div');
+  loadingOverlay.className = 'swipe-overlay';
+  loadingOverlay.id = 'suggestions-loading-overlay';
+  loadingOverlay.innerHTML = `
+    <div class="swipe-header">
+      <div class="swipe-header-title">Song Suggestions</div>
+    </div>
+    <div class="suggestions-loading" style="color:#fff;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div class="suggestions-spinner"></div>
+      <p>Finding songs that fit your service theme…</p>
     </div>
   `;
-  document.body.appendChild(overlay);
+  document.body.appendChild(loadingOverlay);
 
+  let suggestions, theme;
   try {
-    // Read theme/lessons from the form fields — they may not be saved yet (e.g. auto-lookup just ran)
     const themeField = document.getElementById('edit-theme');
     const lessonsField = document.getElementById('edit-bible-lessons');
     const bodyPayload = {};
@@ -899,90 +896,422 @@ async function fetchAndShowSuggestions() {
       body: JSON.stringify(bodyPayload),
     });
     const data = await res.json();
+    loadingOverlay.remove();
 
     if (!res.ok) {
-      document.getElementById('suggestions-content').innerHTML = `
-        <p class="suggestions-error">${escapeHtml(data.error || 'Failed to get suggestions.')}</p>
-      `;
-      document.getElementById('suggestions-actions').style.display = '';
-      document.getElementById('suggestions-done-btn').textContent = 'Close';
-      document.getElementById('suggestions-done-btn').addEventListener('click', () => overlay.remove());
+      alert(data.error || 'Failed to get song suggestions. Please try again.');
       return;
     }
 
-    const { suggestions, theme } = data;
-    const sections = currentPlaylist.sections.map((s, i) => ({ name: s.name, idx: i }));
+    suggestions = data.suggestions;
+    theme = data.theme;
+  } catch (err) {
+    loadingOverlay.remove();
+    alert('Failed to reach the suggestions service. You can pick songs manually.');
+    return;
+  }
 
-    const suggestionsHtml = suggestions.map((s, i) => {
-      const sectionOptions = sections.map(sec =>
-        `<option value="${sec.idx}" ${sec.name === s.section ? 'selected' : ''}>${escapeHtml(sec.name)}</option>`
-      ).join('');
-      return `
-        <div class="suggestion-item" id="suggestion-${i}">
-          <div class="suggestion-info">
-            <span class="suggestion-title">${escapeHtml(s.title)}</span>
-            <span class="suggestion-reason">${escapeHtml(s.reason)}</span>
-            <span class="suggestion-last-used">${s.lastUsed ? `Last performed: ${formatDisplayDate(s.lastUsed)}` : 'Never performed'}</span>
-          </div>
-          <div class="suggestion-actions">
-            <select class="suggestion-section-select" data-idx="${i}">${sectionOptions}</select>
-            <button class="btn btn-secondary btn-sm suggestion-add-btn" data-song-id="${escapeHtml(s.songId)}" data-idx="${i}">Add</button>
-          </div>
+  showSuggestionsAsSwipeCards(suggestions, theme);
+}
+
+function renderSuggestionCard(suggestion, sections) {
+  const sectionOptions = sections.map(sec =>
+    `<option value="${sec.idx}" ${sec.name === suggestion.section ? 'selected' : ''}>${escapeHtml(sec.name)}</option>`
+  ).join('');
+  const lastUsedHtml = suggestion.lastUsed
+    ? `<span class="swipe-card-last-used">Last performed: ${formatDisplayDate(suggestion.lastUsed)}</span>`
+    : `<span class="swipe-card-never-used">Never performed</span>`;
+
+  const card = document.createElement('div');
+  card.className = 'swipe-card';
+  card.dataset.songId = suggestion.songId;
+  card.innerHTML = `
+    <div class="swipe-indicator swipe-indicator-add">Add ✓</div>
+    <div class="swipe-indicator swipe-indicator-skip">✗ Skip</div>
+    <div class="swipe-card-content">
+      <div class="swipe-card-title">${escapeHtml(suggestion.title)}</div>
+      <div class="swipe-card-reason">${escapeHtml(suggestion.reason)}</div>
+      <div class="swipe-card-usage">${lastUsedHtml}</div>
+      <div class="swipe-card-section-row">
+        <label class="swipe-card-section-label">Add to:</label>
+        <select class="swipe-card-section-select">${sectionOptions}</select>
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function showSuggestionsAsSwipeCards(suggestions, theme) {
+  const sections = currentPlaylist.sections.map((s, i) => ({ name: s.name, idx: i }));
+  let cardIndex = 0;
+  const sessionAdded = [];
+
+  const overlay = document.createElement('div');
+  overlay.className = 'swipe-overlay';
+  overlay.id = 'suggestions-swipe-overlay';
+  overlay.innerHTML = `
+    <div class="swipe-header">
+      <div class="swipe-header-title">
+        Song Suggestions${theme ? ` · <span class="swipe-theme-label">${escapeHtml(theme)}</span>` : ''}
+      </div>
+      <button class="btn btn-secondary swipe-close-btn" id="suggestions-done-btn">Done</button>
+    </div>
+    <div class="swipe-progress" id="suggestions-progress">${suggestions.length > 0 ? `1 / ${suggestions.length}` : '0 / 0'}</div>
+    <div class="swipe-card-stack" id="suggestions-card-stack"></div>
+    <div class="swipe-actions">
+      <button class="btn swipe-btn swipe-btn-skip" id="suggestions-skip-btn">✗ Skip</button>
+      <button class="btn swipe-btn swipe-btn-add" id="suggestions-add-btn">✓ Add</button>
+    </div>
+    <div class="swipe-hint">← Skip &nbsp;|&nbsp; Add →</div>
+  `;
+  document.body.appendChild(overlay);
+
+  const cardStack = document.getElementById('suggestions-card-stack');
+
+  function updateProgress() {
+    const el = document.getElementById('suggestions-progress');
+    if (el) el.textContent = `${Math.min(cardIndex + 1, suggestions.length)} / ${suggestions.length}`;
+  }
+
+  function renderTopCards() {
+    cardStack.innerHTML = '';
+    for (let i = Math.min(cardIndex + 2, suggestions.length - 1); i >= cardIndex; i--) {
+      const card = renderSuggestionCard(suggestions[i], sections);
+      if (i === cardIndex) {
+        card.classList.add('swipe-card-top');
+        attachCardGestures(card, handleAction);
+      } else if (i === cardIndex + 1) {
+        card.classList.add('swipe-card-behind-1');
+      } else {
+        card.classList.add('swipe-card-behind-2');
+      }
+      cardStack.appendChild(card);
+    }
+  }
+
+  async function handleAction(direction) {
+    if (cardIndex >= suggestions.length) return;
+    const suggestion = suggestions[cardIndex];
+    const topCard = cardStack.querySelector('.swipe-card-top');
+    if (topCard?._cleanupMouse) topCard._cleanupMouse();
+
+    if (direction === 'right') {
+      if (topCard) topCard.classList.add('fly-right');
+      // Get selected section from the card's dropdown
+      const select = topCard?.querySelector('.swipe-card-section-select');
+      const sectionIdx = select ? parseInt(select.value) : 0;
+
+      const freshRes = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
+      if (freshRes.ok) currentPlaylist = await freshRes.json();
+      sectionSongs(sectionIdx).push({ id: suggestion.songId, key: null, tempo: null, notes: null });
+
+      const saveRes = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sections: serialiseSections() }),
+      });
+
+      if (saveRes.ok) {
+        const fresh = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
+        if (fresh.ok) currentPlaylist = await fresh.json();
+        sessionAdded.push({ title: suggestion.title, section: sections[sectionIdx]?.name });
+      } else {
+        sectionSongs(sectionIdx).pop();
+        if (topCard) {
+          topCard.classList.remove('fly-right');
+          const errEl = document.createElement('div');
+          errEl.className = 'swipe-card-error';
+          errEl.textContent = 'Failed to save — try again.';
+          topCard.querySelector('.swipe-card-content').appendChild(errEl);
+        }
+        return;
+      }
+    } else {
+      if (topCard) topCard.classList.add('fly-left');
+    }
+
+    cardIndex++;
+    setTimeout(() => {
+      if (cardIndex >= suggestions.length) {
+        showSuggestionsDone();
+      } else {
+        updateProgress();
+        renderTopCards();
+      }
+    }, 280);
+  }
+
+  function showSuggestionsDone() {
+    document.getElementById('suggestions-add-btn').disabled = true;
+    document.getElementById('suggestions-skip-btn').disabled = true;
+    if (sessionAdded.length === 0) {
+      cardStack.innerHTML = `<div class="swipe-empty"><p>No suggestions added.</p><p class="swipe-empty-sub">You can add songs manually from the editor.</p></div>`;
+    } else {
+      cardStack.innerHTML = `
+        <div class="swipe-summary">
+          <div class="swipe-summary-title">Added ${sessionAdded.length} song${sessionAdded.length !== 1 ? 's' : ''}</div>
+          <ul class="swipe-summary-list">
+            ${sessionAdded.map(s => `<li>${escapeHtml(s.title)}${s.section ? ` → ${escapeHtml(s.section)}` : ''}</li>`).join('')}
+          </ul>
         </div>
       `;
-    }).join('');
+    }
+  }
 
-    document.getElementById('suggestions-content').innerHTML = `
-      ${theme ? `<div class="suggestions-theme">Theme: ${escapeHtml(theme)}</div>` : ''}
-      <p class="suggestions-intro">Here are songs that fit your service. Select a section and click Add.</p>
-      <div class="suggestions-list">${suggestionsHtml}</div>
-    `;
-    document.getElementById('suggestions-actions').style.display = '';
-    document.getElementById('suggestions-done-btn').addEventListener('click', async () => {
-      overlay.remove();
-      const fresh = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
-      if (fresh.ok) currentPlaylist = await fresh.json();
-      renderPlaylistEditor();
-    });
+  function onKeyDown(e) {
+    if (e.key === 'ArrowRight' || e.key === 'l' || e.key === 'L') { e.preventDefault(); handleAction('right'); }
+    else if (e.key === 'ArrowLeft' || e.key === 'j' || e.key === 'J') { e.preventDefault(); handleAction('left'); }
+  }
+  document.addEventListener('keydown', onKeyDown);
 
-    document.querySelectorAll('.suggestion-add-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const songId = btn.dataset.songId;
-        const idx = parseInt(btn.dataset.idx);
-        const sectionIdx = parseInt(document.querySelector(`.suggestion-section-select[data-idx="${idx}"]`).value);
+  async function close() {
+    document.removeEventListener('keydown', onKeyDown);
+    overlay.remove();
+    const fresh = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
+    if (fresh.ok) currentPlaylist = await fresh.json();
+    renderPlaylistEditor();
+  }
 
-        btn.disabled = true;
-        btn.textContent = 'Adding…';
+  document.getElementById('suggestions-done-btn').addEventListener('click', close);
+  document.getElementById('suggestions-add-btn').addEventListener('click', () => handleAction('right'));
+  document.getElementById('suggestions-skip-btn').addEventListener('click', () => handleAction('left'));
 
-        // Re-fetch current sections to avoid stale state
-        const freshRes = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
-        if (freshRes.ok) currentPlaylist = await freshRes.json();
+  if (suggestions.length === 0) {
+    showSuggestionsDone();
+  } else {
+    renderTopCards();
+  }
+}
 
-        sectionSongs(sectionIdx).push({ id: songId, key: null, tempo: null, notes: null });
+// === Shared swipe gesture helper ===
 
-        const saveRes = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sections: serialiseSections() }),
-        });
+function attachCardGestures(card, onSwipe) {
+  let startX = 0, currentX = 0, isDragging = false;
+  const THRESHOLD = 80;
 
-        if (saveRes.ok) {
-          currentPlaylist = await saveRes.json();
-          btn.textContent = 'Added ✓';
-          btn.classList.add('suggestion-added');
-        } else {
-          btn.disabled = false;
-          btn.textContent = 'Add';
-        }
+  function onStart(x) { startX = x; currentX = x; isDragging = true; }
+
+  function onMove(x) {
+    if (!isDragging) return;
+    currentX = x;
+    const dx = currentX - startX;
+    card.style.transform = `translateX(${dx}px) rotate(${dx * 0.05}deg)`;
+    const addInd = card.querySelector('.swipe-indicator-add');
+    const skipInd = card.querySelector('.swipe-indicator-skip');
+    if (dx > THRESHOLD) {
+      addInd.style.opacity = Math.min((dx - THRESHOLD) / 80, 1);
+      skipInd.style.opacity = '0';
+    } else if (dx < -THRESHOLD) {
+      skipInd.style.opacity = Math.min((-dx - THRESHOLD) / 80, 1);
+      addInd.style.opacity = '0';
+    } else {
+      addInd.style.opacity = '0';
+      skipInd.style.opacity = '0';
+    }
+  }
+
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    const dx = currentX - startX;
+    card.style.transform = '';
+    if (dx > THRESHOLD) {
+      onSwipe('right');
+    } else if (dx < -THRESHOLD) {
+      onSwipe('left');
+    } else {
+      card.style.transition = 'transform 0.25s ease';
+      card.style.transform = 'translateX(0) rotate(0)';
+      card.querySelector('.swipe-indicator-add').style.opacity = '0';
+      card.querySelector('.swipe-indicator-skip').style.opacity = '0';
+      setTimeout(() => { card.style.transition = ''; }, 260);
+    }
+  }
+
+  card.addEventListener('touchstart', (e) => onStart(e.touches[0].clientX), { passive: true });
+  card.addEventListener('touchmove', (e) => onMove(e.touches[0].clientX), { passive: true });
+  card.addEventListener('touchend', onEnd);
+  card.addEventListener('mousedown', (e) => { e.preventDefault(); onStart(e.clientX); });
+  const onMouseMove = (e) => { if (isDragging) onMove(e.clientX); };
+  const onMouseUp = () => { if (isDragging) onEnd(); };
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+  card._cleanupMouse = () => {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  };
+}
+
+// === Swipe Song Picker ===
+
+function buildSwipeDeck(songs, playlist) {
+  const existingIds = new Set();
+  for (const section of playlist.sections) {
+    for (const song of (section.songs || [])) existingIds.add(song.id);
+  }
+  let deck = songs.filter(s => !existingIds.has(s.id));
+  if (filteredSongIds) {
+    const idSet = new Set(filteredSongIds);
+    deck = deck.filter(s => idSet.has(s.id));
+  }
+  deck.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+  return deck;
+}
+
+function renderSwipeCard(song, usageSummary) {
+  const usage = usageSummary ? usageSummary[song.id] : null;
+  const lastUsedHtml = usage?.lastUsed
+    ? `<span class="swipe-card-last-used">Last used: ${formatDisplayDate(usage.lastUsed)}</span>`
+    : `<span class="swipe-card-never-used">Never used</span>`;
+  const card = document.createElement('div');
+  card.className = 'swipe-card';
+  card.dataset.songId = song.id;
+  card.innerHTML = `
+    <div class="swipe-indicator swipe-indicator-add">Add ✓</div>
+    <div class="swipe-indicator swipe-indicator-skip">✗ Skip</div>
+    <div class="swipe-card-content">
+      <div class="swipe-card-title">${escapeHtml(song.title || 'Untitled')}</div>
+      ${song.artist ? `<div class="swipe-card-artist">${escapeHtml(song.artist)}</div>` : ''}
+      ${song.key ? `<div class="swipe-card-key">Key: ${escapeHtml(song.key)}</div>` : ''}
+      ${song.lyricsPreview ? `<div class="swipe-card-lyrics">${escapeHtml(song.lyricsPreview)}</div>` : ''}
+      <div class="swipe-card-usage">${lastUsedHtml}</div>
+    </div>
+  `;
+  return card;
+}
+
+async function openSwipePicker(playlistId, sectionName) {
+  if (allSongs.length === 0) allSongs = await fetchSongs();
+  const usageSummary = await ensureUsageSummary();
+  const deck = buildSwipeDeck(allSongs, currentPlaylist);
+  let deckIndex = 0;
+  const sessionAdded = [];
+  const targetSectionIdx = currentPlaylist.sections.findIndex(s => s.name === sectionName);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'swipe-overlay';
+  overlay.id = 'swipe-picker-overlay';
+  overlay.innerHTML = `
+    <div class="swipe-header">
+      <div class="swipe-header-title">Pick songs for <strong>${escapeHtml(sectionName)}</strong></div>
+      <button class="btn btn-secondary swipe-close-btn" id="swipe-close-btn">Done</button>
+    </div>
+    <div class="swipe-progress" id="swipe-progress">${deck.length > 0 ? `1 / ${deck.length}` : '0 / 0'}</div>
+    <div class="swipe-card-stack" id="swipe-card-stack"></div>
+    <div class="swipe-actions">
+      <button class="btn swipe-btn swipe-btn-skip" id="swipe-skip-btn">✗ Skip</button>
+      <button class="btn swipe-btn swipe-btn-add" id="swipe-add-btn">✓ Add</button>
+    </div>
+    <div class="swipe-hint">← Skip &nbsp;|&nbsp; Add →  &nbsp;·&nbsp;  J / L keys</div>
+  `;
+  document.body.appendChild(overlay);
+
+  const cardStack = document.getElementById('swipe-card-stack');
+
+  function updateProgress() {
+    const el = document.getElementById('swipe-progress');
+    if (el) el.textContent = deck.length > 0 ? `${Math.min(deckIndex + 1, deck.length)} / ${deck.length}` : '0 / 0';
+  }
+
+  function renderTopCards() {
+    cardStack.innerHTML = '';
+    // Render cards behind first (highest index = further back), then top card last so it's on top in DOM
+    for (let i = Math.min(deckIndex + 2, deck.length - 1); i >= deckIndex; i--) {
+      const card = renderSwipeCard(deck[i], usageSummary);
+      if (i === deckIndex) {
+        card.classList.add('swipe-card-top');
+        attachCardGestures(card, handleSwipeAction);
+      } else if (i === deckIndex + 1) {
+        card.classList.add('swipe-card-behind-1');
+      } else {
+        card.classList.add('swipe-card-behind-2');
+      }
+      cardStack.appendChild(card);
+    }
+  }
+
+  async function handleSwipeAction(direction) {
+    if (deckIndex >= deck.length) return;
+    const song = deck[deckIndex];
+    const topCard = cardStack.querySelector('.swipe-card-top');
+    // Clean up mouse listeners from the card being dismissed
+    if (topCard?._cleanupMouse) topCard._cleanupMouse();
+
+    if (direction === 'right') {
+      if (topCard) topCard.classList.add('fly-right');
+      sectionSongs(targetSectionIdx).push({ id: song.id, key: null, tempo: null, notes: null });
+      const saveRes = await fetch(`/api/playlists/${encodeURIComponent(playlistId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sections: serialiseSections() }),
       });
-    });
-  } catch (err) {
-    document.getElementById('suggestions-content').innerHTML = `
-      <p class="suggestions-error">Failed to reach the suggestions service. You can pick songs manually.</p>
-    `;
-    document.getElementById('suggestions-actions').style.display = '';
-    document.getElementById('suggestions-done-btn').textContent = 'Close';
-    document.getElementById('suggestions-done-btn').addEventListener('click', () => overlay.remove());
+      if (saveRes.ok) {
+        const fresh = await fetch(`/api/playlists/${encodeURIComponent(playlistId)}`);
+        if (fresh.ok) currentPlaylist = await fresh.json();
+        sessionAdded.push(song);
+      } else {
+        sectionSongs(targetSectionIdx).pop();
+        if (topCard) {
+          topCard.classList.remove('fly-right');
+          const errEl = document.createElement('div');
+          errEl.className = 'swipe-card-error';
+          errEl.textContent = 'Failed to save — try again.';
+          topCard.querySelector('.swipe-card-content').appendChild(errEl);
+        }
+        return;
+      }
+    } else {
+      if (topCard) topCard.classList.add('fly-left');
+    }
+
+    deckIndex++;
+    setTimeout(() => {
+      if (deckIndex >= deck.length) {
+        showSwipeEndState();
+      } else {
+        updateProgress();
+        renderTopCards();
+      }
+    }, 280);
+  }
+
+  function showSwipeEndState() {
+    document.getElementById('swipe-add-btn').disabled = true;
+    document.getElementById('swipe-skip-btn').disabled = true;
+    if (sessionAdded.length === 0) {
+      cardStack.innerHTML = `<div class="swipe-empty"><p>No more songs to show.</p><p class="swipe-empty-sub">All songs have been reviewed or are already in the playlist.</p></div>`;
+    } else {
+      cardStack.innerHTML = `
+        <div class="swipe-summary">
+          <div class="swipe-summary-title">Added ${sessionAdded.length} song${sessionAdded.length !== 1 ? 's' : ''} to <strong>${escapeHtml(sectionName)}</strong></div>
+          <ul class="swipe-summary-list">${sessionAdded.map(s => `<li>${escapeHtml(s.title || s.id)}</li>`).join('')}</ul>
+        </div>
+      `;
+    }
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'ArrowRight' || e.key === 'l' || e.key === 'L') { e.preventDefault(); handleSwipeAction('right'); }
+    else if (e.key === 'ArrowLeft' || e.key === 'j' || e.key === 'J') { e.preventDefault(); handleSwipeAction('left'); }
+  }
+  document.addEventListener('keydown', onKeyDown);
+
+  async function closeSwipePicker() {
+    document.removeEventListener('keydown', onKeyDown);
+    overlay.remove();
+    const fresh = await fetch(`/api/playlists/${encodeURIComponent(playlistId)}`);
+    if (fresh.ok) currentPlaylist = await fresh.json();
+    renderPlaylistEditor();
+  }
+
+  document.getElementById('swipe-close-btn').addEventListener('click', closeSwipePicker);
+  document.getElementById('swipe-add-btn').addEventListener('click', () => handleSwipeAction('right'));
+  document.getElementById('swipe-skip-btn').addEventListener('click', () => handleSwipeAction('left'));
+
+  if (deck.length === 0) {
+    showSwipeEndState();
+  } else {
+    renderTopCards();
   }
 }
 
