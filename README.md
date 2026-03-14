@@ -14,6 +14,7 @@ A web application for managing worship service playlists, song libraries, and se
 - **Song Upload** — Upload multiple `.txt` song files at once via the All Songs page
 - **Google OAuth Login** — Restricted to `redeemermtc.org` domain accounts
 - **Usage Tracking** — Track when songs were last used and how frequently
+- **AI Song Suggestions** — Claude-powered song recommendations based on the service theme and Bible passages, with last-used dates and one-click add to playlist
 
 ## Getting Started
 
@@ -99,6 +100,7 @@ mkdir -p /app/volume/songs /app/volume/config /app/volume/analytics
 - **Storage:** File-based (JSON for playlists/usage, .txt for songs)
 - **Auth:** Google OAuth 2.0 (Passport.js), domain-restricted
 - **Export:** docx package for Word documents, Google Docs API for cloud export
+- **AI:** Anthropic Claude API for AI-powered song suggestions
 
 ## TODO
 
@@ -115,7 +117,7 @@ mkdir -p /app/volume/songs /app/volume/config /app/volume/analytics
 - [x] Export to Google Docs
 - [x] Add a new song feature (multi-file .txt upload)
 - [x] confirm deployment and database playlist storage
-- [ ] Song suggestions based on Bible lessons and weekly theme
+- [x] Song suggestions based on Bible lessons and weekly theme
 - [ ] swipe UI style to pick songs
 - [ ] Google Drive Sync
 - [ ] Edit a song feature
