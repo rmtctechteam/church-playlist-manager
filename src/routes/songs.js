@@ -101,6 +101,60 @@ function createSongsRouter(songs, songsDir) {
     res.json(song);
   });
 
+  // PATCH /api/songs/:id/youtube — update YouTube reference URLs
+  router.patch('/:id/youtube', (req, res) => {
+    const song = songs.find(s => s.id === req.params.id);
+    if (!song) return res.status(404).json({ error: 'Song not found' });
+
+    const { youtubeUrls } = req.body;
+    if (!Array.isArray(youtubeUrls)) {
+      return res.status(400).json({ error: 'youtubeUrls must be an array' });
+    }
+    if (youtubeUrls.length > 5) {
+      return res.status(400).json({ error: 'Maximum 5 YouTube URLs allowed' });
+    }
+    for (const url of youtubeUrls) {
+      if (typeof url !== 'string' || !url.startsWith('https://') || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
+        return res.status(400).json({ error: `Invalid YouTube URL: ${url}` });
+      }
+    }
+
+    // Find the song's file on disk
+    const files = fs.readdirSync(songsDir);
+    const filename = files.find(f => path.basename(f, '.txt') === song.id);
+    if (!filename) return res.status(404).json({ error: 'Song file not found' });
+    const filePath = path.join(songsDir, filename);
+
+    // Read current file content
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const lines = content.split(/\r?\n/);
+
+    // Find the end of the header (first blank line or end of file)
+    let headerEnd = lines.findIndex(l => l.trim() === '');
+    if (headerEnd === -1) headerEnd = lines.length;
+
+    // Remove any existing YouTube: line from the header
+    const headerLines = lines.slice(0, headerEnd).filter(l => !l.trim().toLowerCase().startsWith('youtube:'));
+    const bodyLines = lines.slice(headerEnd);
+
+    // Build new header — insert YouTube line before the first blank line separator
+    if (youtubeUrls.length > 0) {
+      headerLines.push(`YouTube: ${youtubeUrls.join(', ')}`);
+    }
+
+    const newContent = [...headerLines, ...bodyLines].join('\n');
+
+    // Atomic write
+    const tmpPath = filePath + '.tmp';
+    fs.writeFileSync(tmpPath, newContent, 'utf-8');
+    fs.renameSync(tmpPath, filePath);
+
+    // Update in-memory song entry
+    song.youtubeUrls = youtubeUrls;
+
+    res.json(song);
+  });
+
   // POST /api/songs/upload — upload one or more .txt song files
   router.post('/upload', upload.array('songs'), (req, res) => {
     if (!req.files || req.files.length === 0) {

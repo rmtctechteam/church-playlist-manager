@@ -118,10 +118,11 @@ mkdir -p /app/volume/songs /app/volume/config /app/volume/analytics
 - [x] Add a new song feature (multi-file .txt upload)
 - [x] confirm deployment and database playlist storage
 - [x] Song suggestions based on Bible lessons and weekly theme
-- [ ] swipe UI style to pick songs
+- [x] swipe UI style to pick songs
+- [ ] Add Youtube references
+- [ ] Voice assistant - Searching for songs, suggesting specific seasons or topics
 - [ ] Google Drive Sync
 - [ ] Edit a song feature
-- [ ] Add Youtube references
 - [ ] Propresenter Import - Create a Sunday song version that is separate from the master song list
 - [ ] Overlay Song Chords via association
 - [ ] Track Master Song Edits

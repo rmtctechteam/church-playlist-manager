@@ -37,6 +37,21 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function showToast(message, duration = 2500) {
+  const existing = document.getElementById('app-toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'app-toast';
+  toast.className = 'app-toast';
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('app-toast-visible'));
+  setTimeout(() => {
+    toast.classList.remove('app-toast-visible');
+    toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+  }, duration);
+}
+
 function formatDisplayDate(dateStr) {
   if (!dateStr) return '';
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -177,6 +192,38 @@ function renderMusicSection(song) {
   return `<div class="song-music-section"><h4>Music</h4>${keyHtml}${notesHtml}</div>`;
 }
 
+function extractYoutubeId(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('?')[0];
+    return u.searchParams.get('v') || u.pathname.split('/').pop();
+  } catch (_) { return url; }
+}
+
+function renderYoutubeSection(song) {
+  const urls = song.youtubeUrls || [];
+  const cardsHtml = urls.map((url, i) => {
+    const id = extractYoutubeId(url);
+    return `
+      <a class="youtube-card" href="${escapeHtml(url)}" target="_blank" rel="noopener">
+        <span class="youtube-card-icon">▶</span>
+        <span class="youtube-card-label">YouTube · ${escapeHtml(id)}</span>
+        <button class="youtube-remove-btn" data-idx="${i}" title="Remove" aria-label="Remove">✕</button>
+      </a>`;
+  }).join('');
+
+  return `
+    <div class="youtube-section" data-song-id="${escapeHtml(song.id)}">
+      <h4>YouTube References</h4>
+      <div class="youtube-cards">${cardsHtml}</div>
+      <div class="youtube-add-row">
+        <input class="youtube-add-input" type="url" placeholder="https://youtu.be/... or youtube.com/watch?v=...">
+        <button class="btn btn-secondary btn-sm youtube-add-btn">Add</button>
+      </div>
+      <div class="youtube-error" style="display:none"></div>
+    </div>`;
+}
+
 async function selectSong(id) {
   activeSongId = id;
   // Update active class in list
@@ -227,14 +274,115 @@ async function selectSong(id) {
     </div>
   `).join('');
 
-  songDetailPanel.innerHTML = `
+  const detailHtml = `
     <div class="song-detail-content">
       <h2>${escapeHtml(song.title || 'Untitled')}</h2>
       ${usageHtml}
       ${renderMusicSection(song)}
+      ${renderYoutubeSection(song)}
       <div class="detail-lyrics">${lyricsHtml}</div>
     </div>
   `;
+
+  // On mobile, show as a modal; on desktop, populate the side panel
+  if (window.innerWidth <= 768) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay song-detail-modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal song-detail-modal">
+        <button class="song-detail-modal-close" id="song-detail-close-btn" aria-label="Close">✕</button>
+        ${detailHtml}
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    attachYoutubeHandlers(overlay, song);
+    document.getElementById('song-detail-close-btn').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  } else {
+    songDetailPanel.innerHTML = detailHtml;
+    attachYoutubeHandlers(songDetailPanel, song);
+  }
+}
+
+function attachYoutubeHandlers(container, song) {
+  const section = container.querySelector('.youtube-section');
+  if (!section) return;
+  const songId = section.dataset.songId;
+  const errorEl = section.querySelector('.youtube-error');
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.style.display = '';
+  }
+  function clearError() { errorEl.style.display = 'none'; errorEl.textContent = ''; }
+
+  async function patchUrls(urls) {
+    const res = await fetch(`/api/songs/${encodeURIComponent(songId)}/youtube`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ youtubeUrls: urls }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Failed to save');
+    }
+    return res.json();
+  }
+
+  // Remove buttons
+  section.querySelectorAll('.youtube-remove-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      clearError();
+      const idx = parseInt(btn.dataset.idx);
+      const updated = [...(song.youtubeUrls || [])];
+      updated.splice(idx, 1);
+      try {
+        const updatedSong = await patchUrls(updated);
+        song.youtubeUrls = updatedSong.youtubeUrls;
+        section.querySelector('.youtube-cards').innerHTML = (song.youtubeUrls || []).map((url, i) => {
+          const id = extractYoutubeId(url);
+          return `<a class="youtube-card" href="${escapeHtml(url)}" target="_blank" rel="noopener">
+            <span class="youtube-card-icon">▶</span>
+            <span class="youtube-card-label">YouTube · ${escapeHtml(id)}</span>
+            <button class="youtube-remove-btn" data-idx="${i}" title="Remove" aria-label="Remove">✕</button>
+          </a>`;
+        }).join('');
+        attachYoutubeHandlers(container, song);
+      } catch (err) {
+        showError(err.message);
+      }
+    });
+  });
+
+  // Add button
+  const addBtn = section.querySelector('.youtube-add-btn');
+  const addInput = section.querySelector('.youtube-add-input');
+  addBtn.addEventListener('click', async () => {
+    clearError();
+    const url = addInput.value.trim();
+    if (!url.startsWith('https://') || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
+      showError('Please enter a valid YouTube URL (youtube.com or youtu.be)');
+      return;
+    }
+    const updated = [...(song.youtubeUrls || []), url];
+    try {
+      const updatedSong = await patchUrls(updated);
+      song.youtubeUrls = updatedSong.youtubeUrls;
+      addInput.value = '';
+      section.querySelector('.youtube-cards').innerHTML = (song.youtubeUrls || []).map((u, i) => {
+        const vid = extractYoutubeId(u);
+        return `<a class="youtube-card" href="${escapeHtml(u)}" target="_blank" rel="noopener">
+          <span class="youtube-card-icon">▶</span>
+          <span class="youtube-card-label">YouTube · ${escapeHtml(vid)}</span>
+          <button class="youtube-remove-btn" data-idx="${i}" title="Remove" aria-label="Remove">✕</button>
+        </a>`;
+      }).join('');
+      attachYoutubeHandlers(container, song);
+    } catch (err) {
+      showError(err.message);
+    }
+  });
 }
 
 async function loadAndRenderSongs() {
@@ -660,13 +808,15 @@ function renderPlaylistEditor({ autoLookup = false, autoSuggest = false } = {}) 
       </div>
     </div>
     <div class="editor-bottom-actions">
-      <button class="btn btn-danger" id="delete-playlist-btn">Delete Playlist</button>
-      <div class="editor-bottom-actions-right">
-        <button class="btn btn-secondary" id="export-doc-btn">Export Doc</button>
-        <button class="btn btn-secondary" id="create-google-doc-btn">Create Google Doc</button>
-        ${songSuggestionsEnabled ? '<button class="btn btn-secondary" id="suggest-songs-btn">Suggest Songs</button>' : ''}
+      <div class="editor-bottom-primary">
+        <button class="btn btn-primary" id="save-playlist-btn">Save Playlist</button>
         <button class="btn btn-secondary" id="display-from-editor-btn">Display Songs</button>
-        <button class="btn btn-primary" id="save-playlist-btn">Save</button>
+        ${songSuggestionsEnabled ? '<button class="btn btn-secondary" id="suggest-songs-btn">Suggest Songs</button>' : ''}
+      </div>
+      <div class="editor-bottom-secondary">
+        <button class="btn btn-secondary" id="export-doc-btn">Export .docx</button>
+        <button class="btn btn-secondary" id="create-google-doc-btn">Create Google Doc</button>
+        <button class="btn btn-danger btn-outline" id="delete-playlist-btn">Delete</button>
       </div>
     </div>
     <div id="delete-modal" class="modal-overlay hidden">
@@ -1393,7 +1543,7 @@ async function savePlaylist() {
   const res2 = await fetch(`/api/playlists/${encodeURIComponent(currentPlaylist.id)}`);
   if (res2.ok) currentPlaylist = await res2.json();
   renderPlaylistEditor();
-  alert('Playlist saved!');
+  showToast('Playlist saved!');
 }
 
 async function deletePlaylist() {

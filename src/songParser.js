@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const METADATA_FIELDS = ['title', 'artist', 'key', 'tempo', 'notes'];
+const METADATA_FIELDS = ['title', 'artist', 'key', 'tempo', 'notes', 'youtube'];
 
 function parseSongFile(filePath) {
   const filename = path.basename(filePath, '.txt');
@@ -13,7 +13,7 @@ function parseSongContent(id, content) {
   const lines = content.split(/\r?\n/);
 
   // Parse metadata from header lines (before first blank line)
-  const metadata = { id, title: null, artist: null, key: null, tempo: null, notes: null };
+  const metadata = { id, title: null, artist: null, key: null, tempo: null, notes: null, youtube: null };
   let i = 0;
   for (; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -26,6 +26,12 @@ function parseSongContent(id, content) {
       metadata[field] = value || null;
     }
   }
+
+  // Parse YouTube URLs into an array
+  const youtubeUrls = metadata.youtube
+    ? metadata.youtube.split(', ').map(u => u.trim()).filter(Boolean)
+    : [];
+  delete metadata.youtube;
 
   // Skip blank lines between metadata and lyrics
   while (i < lines.length && lines[i].trim() === '') i++;
@@ -75,7 +81,7 @@ function parseSongContent(id, content) {
     });
   }
 
-  return { ...metadata, lyrics };
+  return { ...metadata, youtubeUrls, lyrics };
 }
 
 function loadAllSongs(songsDir) {
