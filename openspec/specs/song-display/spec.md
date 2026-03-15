@@ -42,6 +42,10 @@ The frontend SHALL allow the user to select a song from the list and view its fu
 - **WHEN** a song has no YouTube URLs
 - **THEN** the detail view shows an "Add YouTube reference" prompt in place of the section
 
+#### Scenario: Search YouTube from detail view
+- **WHEN** the user clicks the "Search YouTube" button in the YouTube References section
+- **THEN** a new tab opens with a YouTube search pre-filled with the song's title and artist
+
 #### Scenario: Add YouTube URL from detail view
 - **WHEN** the user enters a valid YouTube URL in the add field and clicks Add
 - **THEN** the URL is saved via PATCH and the card appears in the YouTube References section

@@ -119,7 +119,7 @@ mkdir -p /app/volume/songs /app/volume/config /app/volume/analytics
 - [x] confirm deployment and database playlist storage
 - [x] Song suggestions based on Bible lessons and weekly theme
 - [x] swipe UI style to pick songs
-- [ ] Add Youtube references
+- [x] Add Youtube references (store, display, add/remove, and search YouTube from song detail)
 - [ ] Voice assistant - Searching for songs, suggesting specific seasons or topics
 - [ ] Google Drive Sync
 - [ ] Edit a song feature

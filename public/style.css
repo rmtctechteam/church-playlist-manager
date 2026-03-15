@@ -2138,6 +2138,12 @@ header h1 {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.youtube-search-btn {
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .youtube-add-input {

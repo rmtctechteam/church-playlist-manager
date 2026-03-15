@@ -212,13 +212,17 @@ function renderYoutubeSection(song) {
       </a>`;
   }).join('');
 
+  const query = encodeURIComponent([song.title, song.artist].filter(Boolean).join(' '));
+  const searchHref = `https://www.youtube.com/results?search_query=${query}`;
+
   return `
     <div class="youtube-section" data-song-id="${escapeHtml(song.id)}">
       <h4>YouTube References</h4>
       <div class="youtube-cards">${cardsHtml}</div>
       <div class="youtube-add-row">
-        <input class="youtube-add-input" type="url" placeholder="https://youtu.be/... or youtube.com/watch?v=...">
+        <input class="youtube-add-input" type="url" placeholder="Paste YouTube URL here...">
         <button class="btn btn-secondary btn-sm youtube-add-btn">Add</button>
+        <a class="btn btn-secondary btn-sm youtube-search-btn" href="${searchHref}" target="_blank" rel="noopener" title="Search YouTube for this song">Search YouTube</a>
       </div>
       <div class="youtube-error" style="display:none"></div>
     </div>`;

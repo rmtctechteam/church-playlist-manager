@@ -41,3 +41,10 @@ The system SHALL provide a `PATCH /api/songs/:id/youtube` endpoint that accepts 
 #### Scenario: File write is atomic
 - **WHEN** the YouTube URLs are saved
 - **THEN** the system SHALL write to a temporary file first and rename it to the final path to minimise corruption risk
+
+### Requirement: Search YouTube from song detail
+The song detail view SHALL provide a "Search YouTube" button that opens a YouTube search in a new tab, pre-filled with the song's title and artist, to help the user find a reference video to add.
+
+#### Scenario: Search YouTube button opens pre-filled search
+- **WHEN** the user clicks "Search YouTube" in the YouTube References section
+- **THEN** a new browser tab opens with `youtube.com/results?search_query=<title>+<artist>`
