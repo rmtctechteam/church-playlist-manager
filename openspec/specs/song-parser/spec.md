@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Parse song metadata from text files
-The song parser SHALL read a `.txt` file from the `songs/` directory and extract metadata fields from the header: Title, Artist, Key, Tempo, and Notes. Each field appears on its own line in `Field: Value` format. The metadata section ends at the first blank line.
+The song parser SHALL read a `.txt` file from the `songs/` directory and extract metadata fields from the header: Title, Artist, Key, Tempo, Notes, and YouTube. Each field appears on its own line in `Field: Value` format. The metadata section ends at the first blank line. The `YouTube` field SHALL be parsed into a `youtubeUrls` array by splitting the value on `, ` (comma-space).
 
 #### Scenario: Parse a well-formed song file
 - **WHEN** the parser reads a file containing `Title: Amazing Grace`, `Artist: John Newton`, `Key: G`, `Tempo: 80 BPM`
@@ -18,6 +18,18 @@ The song parser SHALL read a `.txt` file from the `songs/` directory and extract
 #### Scenario: Notes field absent
 - **WHEN** a song file has no `Notes:` line in its header
 - **THEN** the parser returns `notes: null` in the song object
+
+#### Scenario: Parse single YouTube URL
+- **WHEN** a song file contains `YouTube: https://youtu.be/abc123`
+- **THEN** the parser returns `youtubeUrls: ["https://youtu.be/abc123"]`
+
+#### Scenario: Parse multiple YouTube URLs
+- **WHEN** a song file contains `YouTube: https://youtu.be/abc123, https://youtu.be/xyz789`
+- **THEN** the parser returns `youtubeUrls: ["https://youtu.be/abc123", "https://youtu.be/xyz789"]`
+
+#### Scenario: YouTube field absent
+- **WHEN** a song file has no `YouTube:` line
+- **THEN** the parser returns `youtubeUrls: []`
 
 ### Requirement: Parse song lyrics into sections
 The song parser SHALL extract lyrics as an ordered array of sections. Sections are delimited by blank lines. Section labels (a line ending in `:`, e.g., `Verse 1:`, `Chorus:`) are optional. When a label is present, it names the section. When no label is present, the section is auto-numbered as `Section N`.
